@@ -22,7 +22,6 @@
 
         .icon-btn { cursor:pointer; font-size:20px; }
 
-        /* MODAL */
         .modal-bg {
             position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center;
@@ -30,13 +29,6 @@
         .modal {
             background:white; width:92%; max-width:340px; padding:18px; border-radius:10px;
         }
-        .modal h2 { font-size:20px; margin-top:0; text-align:center; }
-        .modal label { font-weight:bold; font-size:15px; }
-        .modal input, .modal select {
-            width:100%; padding:10px; font-size:16px; margin-bottom:12px; border-radius:8px; border:1px solid #ccc;
-        }
-        .modal .btn-danger { background:#ffb3b3; border-color:#e6a0a0; }
-
     </style>
 </head>
 <body>
@@ -86,82 +78,100 @@
     </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="/js/firebase.js"></script>
+<!-- ✅ Firebase Firestore -->
+<script type="module">
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { app } from "./js/firebase.js";
 
-<script>
+    const db = getFirestore(app);
+
     const tabla = document.getElementById("tablaUsuarios");
     const modalBG = document.getElementById("modalBG");
     let usuarioActual = "";
 
-    // Cargar usuarios
+    // ✅ Cargar usuarios en tiempo real
     function cargarUsuarios() {
-        firebase.database().ref("usuarios").on("value", snap => {
+        const usuariosRef = collection(db, "usuarios");
+        onSnapshot(usuariosRef, (snapshot) => {
             tabla.innerHTML = "";
-            snap.forEach(child => {
-                const u = child.key;
-                const d = child.val();
-
-                const fila = `
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                tabla.innerHTML += `
                     <tr>
-                        <td>${u}</td>
-                        <td>${d.nombre || ""}</td>
-                        <td>${d.rol || "normal"}</td>
-                        <td><span class="icon-btn" onclick="abrirEditar('${u}')">✏️</span></td>
-                    </tr>`;
-                tabla.innerHTML += fila;
+                        <td>${data.usuario}</td>
+                        <td>${data.nombre}</td>
+                        <td>${data.rol}</td>
+                        <td><span class="icon-btn" onclick="abrirEditar('${docSnap.id}')">✏️</span></td>
+                    </tr>
+                `;
             });
         });
     }
     cargarUsuarios();
 
-    // Abrir modal para editar
-    function abrirEditar(usuario) {
-        usuarioActual = usuario;
-        firebase.database().ref("usuarios/" + usuario).once("value").then(s => {
-            const data = s.val();
-            document.getElementById("modalTitulo").textContent = "Editar Usuario";
-            document.getElementById("mUsuario").value = usuario;
-            document.getElementById("mNombre").value = data.nombre;
-            document.getElementById("mRol").value = data.rol;
-            modalBG.style.display = "flex";
-        });
-    }
+    // ✅ Editar usuario
+    window.abrirEditar = async (id) => {
+        usuarioActual = id;
+        const docRef = doc(db, "usuarios", id);
+        const docSnap = await getDoc(docRef);
 
-    // Guardar cambios
-    function guardarCambios() {
+        const data = docSnap.data();
+
+        document.getElementById("modalTitulo").textContent = "Editar Usuario";
+        document.getElementById("mUsuario").value = data.usuario;
+        document.getElementById("mNombre").value = data.nombre;
+        document.getElementById("mRol").value = data.rol;
+
+        modalBG.style.display = "flex";
+    };
+
+    // ✅ Guardar cambios o crear usuario
+    window.guardarCambios = async () => {
+        const usuario = document.getElementById("mUsuario").value.trim();
         const nombre = document.getElementById("mNombre").value.trim();
         const rol = document.getElementById("mRol").value;
 
-        firebase.database().ref("usuarios/" + usuarioActual).update({
-            nombre, rol
-        }).then(() => {
+        if (usuarioActual === "") {
+            // Crear
+            const clave = prompt("Ingrese clave inicial:");
+            await setDoc(doc(db, "usuarios", usuario), {
+                usuario,
+                nombre,
+                rol,
+                clave
+            });
+            alert("✅ Usuario creado");
+        } else {
+            // Editar
+            await updateDoc(doc(db, "usuarios", usuarioActual), {
+                nombre,
+                rol
+            });
             alert("✅ Cambios guardados");
-            cerrarModal();
-        });
-    }
+        }
 
-    // Reset clave
-    function resetClave() {
+        cerrarModal();
+    };
+
+    // ✅ Reset clave
+    window.resetClave = async () => {
         const nueva = prompt("Ingrese nueva clave:");
         if (!nueva) return;
-        firebase.database().ref("usuarios/" + usuarioActual).update({
-            clave: nueva
-        }).then(() => alert("✅ Clave actualizada"));
-    }
+        await updateDoc(doc(db, "usuarios", usuarioActual), { clave: nueva });
+        alert("✅ Clave actualizada");
+    };
 
-    // Eliminar usuario
-    function eliminarUsuario() {
+    // ✅ Eliminar usuario
+    window.eliminarUsuario = async () => {
         if (!confirm("¿Eliminar este usuario?")) return;
-        firebase.database().ref("usuarios/" + usuarioActual).remove().then(() => {
-            alert("✅ Usuario eliminado");
-            cerrarModal();
-        });
-    }
+        await deleteDoc(doc(db, "usuarios", usuarioActual));
+        alert("✅ Usuario eliminado");
+        cerrarModal();
+    };
 
-    // Crear usuario
-    function abrirCrear() {
+    // ✅ Crear
+    window.abrirCrear = () => {
         usuarioActual = "";
         document.getElementById("modalTitulo").textContent = "Crear Usuario";
         document.getElementById("mUsuario").disabled = false;
@@ -169,40 +179,12 @@
         document.getElementById("mNombre").value = "";
         document.getElementById("mRol").value = "normal";
         modalBG.style.display = "flex";
-    }
+    };
 
-    function guardarCambios() {
-        const usuario = document.getElementById("mUsuario").value.trim();
-        const nombre = document.getElementById("mNombre").value.trim();
-        const rol = document.getElementById("mRol").value;
-
-        if (document.getElementById("modalTitulo").textContent === "Crear Usuario") {
-            if (!/^\d+$/.test(usuario)) {
-                alert("El usuario debe ser numérico.");
-                return;
-            }
-            const clave = prompt("Ingrese clave inicial:");
-            if (!clave) return;
-            firebase.database().ref("usuarios/" + usuario).set({
-                nombre, rol, clave
-            }).then(() => {
-                alert("✅ Usuario creado");
-                cerrarModal();
-            });
-        } else {
-            firebase.database().ref("usuarios/" + usuario).update({
-                nombre, rol
-            }).then(() => {
-                alert("✅ Cambios guardados");
-                cerrarModal();
-            });
-        }
-    }
-
-    function cerrarModal() {
+    window.cerrarModal = () => {
         modalBG.style.display = "none";
         document.getElementById("mUsuario").disabled = true;
-    }
+    };
 </script>
 
 </body>
