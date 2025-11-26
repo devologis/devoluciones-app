@@ -1,47 +1,42 @@
-function login() {
-  const usuario = document.getElementById("usuario").value.trim();
-  const clave = document.getElementById("clave").value.trim();
+import { app } from "./js/firebase.js";
+import { getFirestore, collection, query, where, getDocs }
+from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // Validar campos
-  if (usuario === "" || clave === "") {
-    alert("Ingrese usuario y clave.");
-    return;
-  }
+const db = getFirestore(app);
 
-  // Validar que el usuario sea numérico
-  if (!/^\d+$/.test(usuario)) {
-    alert("El usuario debe ser numérico.");
-    return;
-  }
+document.getElementById("btnLogin").addEventListener("click", async () => {
+    const usuario = document.getElementById("usuario").value.trim();
+    const clave = document.getElementById("clave").value.trim();
 
-  const db = firebase.firestore();
-
-  // Buscar usuario en Firestore
-  db.collection("usuarios").doc(usuario).get()
-    .then(doc => {
-      if (!doc.exists) {
-        alert("Usuario no encontrado.");
+    if (!usuario || !clave) {
+        alert("Por favor complete todos los campos");
         return;
-      }
+    }
 
-      const data = doc.data();
+    try {
+        const usuariosRef = collection(db, "usuarios");
+        const q = query(usuariosRef, where("usuario", "==", usuario), where("clave", "==", clave));
+        const snapshot = await getDocs(q);
 
-      // Validar clave
-      if (data.clave !== clave) {
-        alert("Clave incorrecta.");
-        return;
-      }
+        if (snapshot.empty) {
+            alert("Usuario o clave incorrectos");
+            return;
+        }
 
-      // Guardar datos en sesión local
-      localStorage.setItem("usuario", usuario);
-      localStorage.setItem("nombre", data.nombre || "");
-      localStorage.setItem("rol", data.rol || "normal");
+        const data = snapshot.docs[0].data();
 
-      // Redirigir al dashboard
-      window.location.href = "dashboard.html";
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Error al conectar con el servidor.");
-    });
-}
+        // Guardar el rol
+        localStorage.setItem("rol", data.rol);
+
+        // Redirigir según rol
+        if (data.rol === "admin") {
+            window.location.href = "admin.html";
+        } else {
+            window.location.href = "index.html";
+        }
+
+    } catch (error) {
+        console.error("Error en login:", error);
+        alert("Hubo un problema al iniciar sesión");
+    }
+});
