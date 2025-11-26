@@ -1,4 +1,8 @@
-// ✅ Configuración de tu proyecto
+// ✅ Importar Firebase Modular (v10)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ✅ Configuración del proyecto
 const firebaseConfig = {
   apiKey: "AIzaSyBcLa0rhe06_7MaY8wQC5ZZJRQ1Z5h5xA",
   authDomain: "inventariopda-b0d5b.firebaseapp.com",
@@ -9,36 +13,32 @@ const firebaseConfig = {
 };
 
 // ✅ Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 // ✅ Inicializar Firestore
-const db = firebase.firestore();
+const db = getFirestore(app);
 
 // ✅ Crear admin inicial si no existe (usuario 1234 / clave 9999)
-function crearAdminInicial() {
-  const adminRef = db.collection("usuarios").doc("1234");
+async function crearAdminInicial() {
+  const adminRef = doc(db, "usuarios", "1234");
+  const adminSnap = await getDoc(adminRef);
 
-  adminRef.get()
-    .then((doc) => {
-      if (!doc.exists) {
-        return adminRef.set({
-          usuario: "1234",
-          clave: "9999",
-          nombre: "Administrador",
-          rol: "admin",
-          admin: true
-        });
-      } else {
-        console.log("✅ Admin inicial ya existe");
-      }
-    })
-    .then(() => {
-      console.log("✅ Usuario admin inicial creado");
-    })
-    .catch((err) => {
-      console.error("❌ Error creando admin:", err);
+  if (!adminSnap.exists()) {
+    await setDoc(adminRef, {
+      usuario: "1234",
+      clave: "9999",
+      nombre: "Administrador",
+      rol: "admin",
+      admin: true
     });
+    console.log("✅ Usuario admin inicial creado");
+  } else {
+    console.log("✅ Admin inicial ya existe");
+  }
 }
 
-// ✅ Ejecutar al cargar firebase.js
+// ✅ Ejecutar
 crearAdminInicial();
+
+// ✅ Exportar app y db para otros archivos
+export { app, db };
