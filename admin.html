@@ -6,34 +6,81 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
 
     <style>
-        body { font-family: Arial, sans-serif; background:#f1f1f1; margin:0; padding:0; }
-        .wrap { max-width:540px; margin:10px auto; padding:14px; }
-        h1 { text-align:center; margin:10px 0 18px; font-size:22px; }
-
-        table { width:100%; border-collapse:collapse; font-size:16px; }
-        th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-        th { background:#e3e3e3; }
-
-        .btn {
-          width:100%; padding:14px; margin:12px 0; font-size:18px; border-radius:10px;
-          border:1px solid #cfcfcf; background:#e8e8e8; cursor:pointer;
+        body { 
+            font-family: Arial, sans-serif; 
+            background:#f1f1f1; 
+            margin:0; 
+            padding:0; 
         }
-        .btn-primary { background:#2563eb; color:white; border:none; }
-        .btn-danger { background:#ffb3b3; }
 
-        .icon-btn { cursor:pointer; font-size:20px; }
+        .wrap { 
+            max-width:600px; 
+            margin:15px auto; 
+            background:white; 
+            padding:18px; 
+            border-radius:10px; 
+            border:1px solid #ddd; 
+        }
 
-        .modal-bg {
-            position:fixed; top:0; left:0; width:100%; height:100%;
-            background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center;
+        h1 { 
+            text-align:center; 
+            margin-bottom:18px; 
         }
-        .modal {
-            background:white; width:92%; max-width:360px; padding:20px; border-radius:10px;
+
+        label { 
+            font-weight:bold; 
+            display:block; 
+            margin-top:10px; 
         }
-        .modal h2 { text-align:center; margin-top:0; }
-        .modal label { font-weight:bold; display:block; margin-top:10px; }
-        .modal input, .modal select {
-            width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:8px;
+
+        input, select {
+            width:100%;
+            padding:10px;
+            margin-top:6px;
+            border:1px solid #ccc;
+            border-radius:6px;
+        }
+
+        button {
+            width:100%;
+            padding:12px;
+            margin-top:14px;
+            border:none;
+            border-radius:6px;
+            font-size:16px;
+            cursor:pointer;
+        }
+
+        .btn-primary { background:#2563eb; color:white; }
+        .btn-primary:active { background:#1e4fbf; }
+
+        .btn-back { background:#e3e3e3; }
+
+        table {
+            width:100%;
+            border-collapse:collapse;
+            margin-top:18px;
+        }
+
+        th, td {
+            border:1px solid #ccc;
+            padding:8px;
+            text-align:center;
+        }
+
+        th { background:#e9e9e9; }
+
+        .btnEliminar {
+            background:#dc2626;
+            color:white;
+            border:none;
+            padding:6px 10px;
+            border-radius:6px;
+            cursor:pointer;
+        }
+
+        .btnEliminar:active {
+            background:#b91c1c;
         }
     </style>
 </head>
@@ -42,182 +89,48 @@
 <div class="wrap">
     <h1>Administración de Usuarios</h1>
 
-    <button class="btn btn-primary" onclick="abrirCrear()">➕ Crear Usuario</button>
+    <!-- ✅ FORMULARIO CREAR USUARIO -->
+    <label>Usuario (ID numérico)</label>
+    <input type="text" id="usuario" inputmode="numeric" pattern="\d*" />
 
+    <label>Nombre</label>
+    <input type="text" id="nombre" />
+
+    <label>Clave</label>
+    <input type="password" id="clave" />
+
+    <label>Rol</label>
+    <select id="rol">
+        <option value="normal">Normal</option>
+        <option value="admin">Admin</option>
+        <option value="auditor">Auditor</option>
+    </select>
+
+    <button class="btn-primary" id="btnAgregar">➕ Crear Usuario</button>
+
+    <!-- ✅ TABLA USUARIOS -->
     <table>
         <thead>
             <tr>
                 <th>Usuario</th>
                 <th>Nombre</th>
                 <th>Rol</th>
-                <th>Modificar</th>
+                <th>Acción</th>
             </tr>
         </thead>
-        <tbody id="tablaUsuarios"></tbody>
+        <tbody id="listaUsuarios"></tbody>
     </table>
 
-    <button class="btn btn-danger" onclick="window.location.href='dashboard.html'">🔙 Volver</button>
+    <button class="btn-back" onclick="window.location.href='dashboard.html'">
+        🔙 Volver
+    </button>
 </div>
 
-<!-- MODAL -->
-<div id="modalBG" class="modal-bg">
-    <div class="modal">
-        <h2 id="modalTitulo"></h2>
+<!-- ✅ Firebase App -->
+<script type="module" src="./js/firebase.js"></script>
 
-        <label>Usuario</label>
-        <input type="text" id="mUsuario">
-
-        <label>Nombre</label>
-        <input type="text" id="mNombre">
-
-        <label>Rol</label>
-        <select id="mRol">
-            <option value="normal">Normal</option>
-            <option value="admin">Admin</option>
-            <option value="auditor">Auditor</option>
-        </select>
-
-        <!-- ✅ Solo aparece al crear -->
-        <div id="claveGroup" style="display:none;">
-            <label>Clave inicial</label>
-            <input type="password" id="mClave">
-        </div>
-
-        <button id="btnCrear" class="btn btn-primary" style="display:none;" onclick="crearUsuario()">✅ Crear Usuario</button>
-
-        <button id="btnGuardar" class="btn btn-primary" style="display:none;" onclick="guardarCambios()">💾 Guardar Cambios</button>
-        <button id="btnReset" class="btn" style="display:none;" onclick="resetClave()">🔑 Resetear Clave</button>
-        <button id="btnEliminar" class="btn btn-danger" style="display:none;" onclick="eliminarUsuario()">🗑 Eliminar Usuario</button>
-
-        <button class="btn" onclick="cerrarModal()">❌ Cerrar</button>
-    </div>
-</div>
-
-<!-- ✅ Firestore -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="./js/firebase.js"></script>
-
-<script>
-    const tabla = document.getElementById("tablaUsuarios");
-    const modalBG = document.getElementById("modalBG");
-    let usuarioActual = "";
-
-    const db = firebase.firestore();
-
-    function cargarUsuarios() {
-        db.collection("usuarios").onSnapshot(snapshot => {
-            tabla.innerHTML = "";
-            snapshot.forEach(doc => {
-                const d = doc.data();
-                tabla.innerHTML += `
-                    <tr>
-                        <td>${d.usuario}</td>
-                        <td>${d.nombre}</td>
-                        <td>${d.rol}</td>
-                        <td><span class="icon-btn" onclick="abrirEditar('${doc.id}')">✏️</span></td>
-                    </tr>`;
-            });
-        });
-    }
-    cargarUsuarios();
-
-    window.abrirCrear = () => {
-        usuarioActual = "";
-        document.getElementById("modalTitulo").textContent = "Crear Usuario";
-        document.getElementById("mUsuario").disabled = false;
-        document.getElementById("mUsuario").value = "";
-        document.getElementById("mNombre").value = "";
-        document.getElementById("mRol").value = "normal";
-        document.getElementById("mClave").value = "";
-
-        // ✅ Mostrar elementos correctos
-        claveGroup.style.display = "block";
-        btnCrear.style.display = "block";
-        btnGuardar.style.display = "none";
-        btnReset.style.display = "none";
-        btnEliminar.style.display = "none";
-
-        modalBG.style.display = "flex";
-    };
-
-    window.crearUsuario = async () => {
-        const usuario = mUsuario.value.trim();
-        const nombre = mNombre.value.trim();
-        const rol = mRol.value;
-        const clave = mClave.value.trim();
-
-        if (!usuario || !nombre || !clave) {
-            alert("Complete todos los campos.");
-            return;
-        }
-
-        if (!/^\d+$/.test(usuario)) {
-            alert("El usuario debe ser numérico.");
-            return;
-        }
-
-        await db.collection("usuarios").doc(usuario).set({
-            usuario, nombre, rol, clave
-        });
-
-        alert("✅ Usuario creado");
-        cerrarModal();
-    };
-
-    window.abrirEditar = async (id) => {
-        usuarioActual = id;
-        const docSnap = await db.collection("usuarios").doc(id).get();
-        const data = docSnap.data();
-
-        document.getElementById("modalTitulo").textContent = "Editar Usuario";
-        mUsuario.value = data.usuario;
-        mUsuario.disabled = true;
-        mNombre.value = data.nombre;
-        mRol.value = data.rol;
-
-        // ✅ Mostrar elementos correctos
-        claveGroup.style.display = "none";
-        btnCrear.style.display = "none";
-        btnGuardar.style.display = "block";
-        btnReset.style.display = "block";
-        btnEliminar.style.display = "block";
-
-        modalBG.style.display = "flex";
-    };
-
-    window.guardarCambios = async () => {
-        const nombre = mNombre.value.trim();
-        const rol = mRol.value;
-
-        await db.collection("usuarios").doc(usuarioActual).update({ nombre, rol });
-
-        alert("✅ Cambios guardados");
-        cerrarModal();
-    };
-
-    window.resetClave = async () => {
-        const nueva = prompt("Ingrese nueva clave:");
-        if (!nueva) return;
-
-        await db.collection("usuarios").doc(usuarioActual).update({ clave: nueva });
-
-        alert("✅ Clave actualizada");
-    };
-
-    window.eliminarUsuario = async () => {
-        if (!confirm("¿Eliminar este usuario?")) return;
-
-        await db.collection("usuarios").doc(usuarioActual).delete();
-        alert("✅ Usuario eliminado");
-        cerrarModal();
-    };
-
-    window.cerrarModal = () => {
-        modalBG.style.display = "none";
-        mUsuario.disabled = true;
-    };
-</script>
+<!-- ✅ Lógica Administrador -->
+<script type="module" src="./js/admin.js"></script>
 
 </body>
 </html>
