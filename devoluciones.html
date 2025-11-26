@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mercancía Total o Parcial</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            padding: 15px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        form {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            width: 100%;
+            box-sizing: border-box;
+        }
+        label {
+            font-size: 15px;
+            display: block;
+            margin-top: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 3px;
+            box-sizing: border-box;
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .botones {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            font-size: 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #e0e0e0;
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Mercancía Total o Parcial</h2>
+
+<form>
+    <label>N° Factura</label>
+    <input type="number" id="factura" autocomplete="off" />
+
+    <label>Código</label>
+    <input type="text" id="codigo" autocomplete="off" />
+
+    <label>Lote</label>
+    <input type="text" id="lote" autocomplete="off" />
+
+    <label>Fecha Vencimiento (Mes y Año)</label>
+    <input type="text" id="fecha_vto" autocomplete="off" placeholder="MM/AAAA" />
+
+    <label>Cantidad Buen Estado</label>
+    <input type="number" id="cant_buen" autocomplete="off" />
+
+    <label>Averías</label>
+    <input type="number" id="averias" autocomplete="off" />
+
+    <label>Total Recibido</label>
+    <input type="number" id="total" readonly />
+
+    <div class="botones">
+        <button type="button" id="btn_guardar">Guardar</button>
+        <button type="button" id="btn_limpiar">Limpiar</button>
+        <button type="button" id="btn_cerrar">Cerrar Sesión</button>
+    </div>
+</form>
+
+<!-- 🔥 Firebase -->
+<script type="module" src="../js/firebase.js"></script>
+
+<!-- 📌 Lógica completa -->
+<script type="module">
+
+import { db, auth, signOut, addDoc, collection } from "../js/firebase.js";
+
+
+// ======================================================
+// 🔒 1. BLOQUEAR ACCESO SI NO ESTÁ LOGUEADO
+// ======================================================
+auth.onAuthStateChanged(user => {
+    if (!user) {
+        window.location.href = "login.html";
+    }
+});
+
+
+// ======================================================
+// ⏳ 2. CIERRE AUTOMÁTICO POR INACTIVIDAD (10 minutos)
+// ======================================================
+let tiempoLimite = 10 * 60 * 1000; // 10 minutos
+let temporizador;
+
+function cerrarSesionAutomatica() {
+    alert("Sesión cerrada por inactividad.");
+    signOut(auth);
+    window.location.href = "login.html";
+}
+
+function reiniciarTemporizador() {
+    clearTimeout(temporizador);
+    temporizador = setTimeout(cerrarSesionAutomatica, tiempoLimite);
+}
+
+// Detectar actividad
+["click", "keypress", "mousemove", "touchstart"].forEach(evento => {
+    document.addEventListener(evento, reiniciarTemporizador);
+});
+
+reiniciarTemporizador();
+
+
+// ======================================================
+// 🔢 3. CALCULAR TOTAL AUTOMÁTICAMENTE
+// ======================================================
+document.getElementById("cant_buen").addEventListener("input", calcTotal);
+document.getElementById("averias").addEventListener("input", calcTotal);
+
+function calcTotal() {
+    let b = Number(document.getElementById("cant_buen").value);
+    let a = Number(document.getElementById("averias").value);
+    document.getElementById("total").value = b + a;
+}
+
+
+// ======================================================
+// 💾 4. GUARDAR EN FIRESTORE
+// ======================================================
+document.getElementById("btn_guardar").addEventListener("click", async () => {
+
+    let data = {
+        factura: document.getElementById("factura").value.trim(),
+        codigo: document.getElementById("codigo").value.trim(),
+        lote: document.getElementById("lote").value.trim(),
+        fecha_vto: document.getElementById("fecha_vto").value.trim(),
+        cant_buen: Number(document.getElementById("cant_buen").value),
+        averias: Number(document.getElementById("averias").value),
+        total: Number(document.getElementById("total").value),
+        timestamp: new Date()
+    };
+
+    if (!data.factura || !data.codigo || !data.lote || !data.fecha_vto) {
+        alert("Complete todos los campos obligatorios.");
+        return;
+    }
+
+    await addDoc(collection(db, "devoluciones"), data);
+
+    alert("Registro guardado correctamente.");
+    limpiar();
+});
+
+
+// ======================================================
+// 🧹 5. LIMPIAR FORMULARIO
+// ======================================================
+function limpiar() {
+    document.querySelector("form").reset();
+    document.getElementById("total").value = "";
+}
+
+document.getElementById("btn_limpiar").addEventListener("click", limpiar);
+
+
+// ======================================================
+// 🚪 6. CERRAR SESIÓN (botón)
+// ======================================================
+document.getElementById("btn_cerrar").addEventListener("click", async () => {
+    await signOut(auth);
+    window.location.href = "login.html";
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Administrar Usuarios</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <style>
+        body { font-family: Arial, sans-serif; background:#f1f1f1; margin:0; padding:0; }
+        .wrap { max-width:540px; margin:10px auto; padding:14px; }
+        h1 { text-align:center; margin:10px 0 18px; font-size:22px; }
+
+        table { width:100%; border-collapse:collapse; font-size:16px; }
+        th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+        th { background:#e3e3e3; }
+
+        .btn {
+          width:100%; padding:14px; margin:12px 0; font-size:18px; border-radius:10px;
+          border:1px solid #cfcfcf; background:#e8e8e8; cursor:pointer;
+        }
+        .btn:active { transform: translateY(1px); }
+
+        .icon-btn { cursor:pointer; font-size:20px; }
+
+        /* MODAL */
+        .modal-bg {
+            position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center;
+        }
+        .modal {
+            background:white; width:92%; max-width:340px; padding:18px; border-radius:10px;
+        }
+        .modal h2 { font-size:20px; margin-top:0; text-align:center; }
+        .modal label { font-weight:bold; font-size:15px; }
+        .modal input, .modal select {
+            width:100%; padding:10px; font-size:16px; margin-bottom:12px; border-radius:8px; border:1px solid #ccc;
+        }
+        .modal .btn-danger { background:#ffb3b3; border-color:#e6a0a0; }
+
+    </style>
+</head>
+<body>
+
+<div class="wrap">
+    <h1>Administración de Usuarios</h1>
+
+    <button class="btn" onclick="abrirCrear()">➕ Crear Usuario</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Modificar</th>
+            </tr>
+        </thead>
+        <tbody id="tablaUsuarios"></tbody>
+    </table>
+
+    <button class="btn btn-danger" onclick="window.location.href='dashboard.html'">🔙 Volver</button>
+</div>
+
+<!-- MODAL -->
+<div id="modalBG" class="modal-bg">
+    <div class="modal">
+        <h2 id="modalTitulo">Editar Usuario</h2>
+
+        <label>Usuario</label>
+        <input type="text" id="mUsuario" disabled>
+
+        <label>Nombre</label>
+        <input type="text" id="mNombre">
+
+        <label>Rol</label>
+        <select id="mRol">
+            <option value="normal">Normal</option>
+            <option value="admin">Admin</option>
+            <option value="auditor">Auditor</option>
+        </select>
+
+        <button class="btn" onclick="guardarCambios()">💾 Guardar Cambios</button>
+        <button class="btn" onclick="resetClave()">🔑 Resetear Clave</button>
+        <button class="btn btn-danger" onclick="eliminarUsuario()">🗑 Eliminar Usuario</button>
+        <button class="btn" onclick="cerrarModal()">❌ Cerrar</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="/js/firebase.js"></script>
+
+<script>
+    const tabla = document.getElementById("tablaUsuarios");
+    const modalBG = document.getElementById("modalBG");
+    let usuarioActual = "";
+
+    // Cargar usuarios
+    function cargarUsuarios() {
+        firebase.database().ref("usuarios").on("value", snap => {
+            tabla.innerHTML = "";
+            snap.forEach(child => {
+                const u = child.key;
+                const d = child.val();
+
+                const fila = `
+                    <tr>
+                        <td>${u}</td>
+                        <td>${d.nombre || ""}</td>
+                        <td>${d.rol || "normal"}</td>
+                        <td><span class="icon-btn" onclick="abrirEditar('${u}')">✏️</span></td>
+                    </tr>`;
+                tabla.innerHTML += fila;
+            });
+        });
+    }
+    cargarUsuarios();
+
+    // Abrir modal para editar
+    function abrirEditar(usuario) {
+        usuarioActual = usuario;
+        firebase.database().ref("usuarios/" + usuario).once("value").then(s => {
+            const data = s.val();
+            document.getElementById("modalTitulo").textContent = "Editar Usuario";
+            document.getElementById("mUsuario").value = usuario;
+            document.getElementById("mNombre").value = data.nombre;
+            document.getElementById("mRol").value = data.rol;
+            modalBG.style.display = "flex";
+        });
+    }
+
+    // Guardar cambios
+    function guardarCambios() {
+        const nombre = document.getElementById("mNombre").value.trim();
+        const rol = document.getElementById("mRol").value;
+
+        firebase.database().ref("usuarios/" + usuarioActual).update({
+            nombre, rol
+        }).then(() => {
+            alert("✅ Cambios guardados");
+            cerrarModal();
+        });
+    }
+
+    // Reset clave
+    function resetClave() {
+        const nueva = prompt("Ingrese nueva clave:");
+        if (!nueva) return;
+        firebase.database().ref("usuarios/" + usuarioActual).update({
+            clave: nueva
+        }).then(() => alert("✅ Clave actualizada"));
+    }
+
+    // Eliminar usuario
+    function eliminarUsuario() {
+        if (!confirm("¿Eliminar este usuario?")) return;
+        firebase.database().ref("usuarios/" + usuarioActual).remove().then(() => {
+            alert("✅ Usuario eliminado");
+            cerrarModal();
+        });
+    }
+
+    // Crear usuario
+    function abrirCrear() {
+        usuarioActual = "";
+        document.getElementById("modalTitulo").textContent = "Crear Usuario";
+        document.getElementById("mUsuario").disabled = false;
+        document.getElementById("mUsuario").value = "";
+        document.getElementById("mNombre").value = "";
+        document.getElementById("mRol").value = "normal";
+        modalBG.style.display = "flex";
+    }
+
+    function guardarCambios() {
+        const usuario = document.getElementById("mUsuario").value.trim();
+        const nombre = document.getElementById("mNombre").value.trim();
+        const rol = document.getElementById("mRol").value;
+
+        if (document.getElementById("modalTitulo").textContent === "Crear Usuario") {
+            if (!/^\d+$/.test(usuario)) {
+                alert("El usuario debe ser numérico.");
+                return;
+            }
+            const clave = prompt("Ingrese clave inicial:");
+            if (!clave) return;
+            firebase.database().ref("usuarios/" + usuario).set({
+                nombre, rol, clave
+            }).then(() => {
+                alert("✅ Usuario creado");
+                cerrarModal();
+            });
+        } else {
+            firebase.database().ref("usuarios/" + usuario).update({
+                nombre, rol
+            }).then(() => {
+                alert("✅ Cambios guardados");
+                cerrarModal();
+            });
+        }
+    }
+
+    function cerrarModal() {
+        modalBG.style.display = "none";
+        document.getElementById("mUsuario").disabled = true;
+    }
+</script>
+
+</body>
+</html>

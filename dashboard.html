@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Panel Principal</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f1f1f1; margin:0; padding:0; }
+    .wrap { max-width:520px; margin:10px auto; padding:18px; text-align:center; }
+    h1 { margin: 6px 0 4px; font-size:22px; }
+    #infoUsuario { font-size:16px; margin-bottom:16px; }
+    .btn {
+      width:100%; padding:16px; margin:10px 0; font-size:18px;
+      border-radius:10px; border:1px solid #cfcfcf; background:#e8e8e8; cursor:pointer;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-danger { background:#ffb3b3; border-color:#e6a0a0; }
+    .hidden { display:none; }
+    .small { font-size:14px; padding:10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Panel Principal</h1>
+    <div id="infoUsuario">Cargando...</div>
+
+    <!-- Botones -->
+    <button id="btnDevoluciones" class="btn">Registrar Devoluciones</button>
+
+    <div id="zonaAdmin" class="hidden">
+      <button id="btnAdmin" class="btn">Administrar Usuarios</button>
+    </div>
+
+    <div id="zonaAuditor" class="hidden">
+      <button id="btnAuditoria" class="btn">Auditoría</button>
+    </div>
+
+    <button id="btnReportes" class="btn">Generar Reportes</button>
+
+    <!-- ✅ NUEVO -->
+    <button id="btnClave" class="btn">Cambiar Clave</button>
+
+    <button id="btnCerrar" class="btn btn-danger">Cerrar Sesión</button>
+  </div>
+
+  <script>
+    const usuario = localStorage.getItem("usuario") || "";
+    const nombre = localStorage.getItem("nombre") || "";
+    const rol = (localStorage.getItem("rol") || "normal").toLowerCase();
+
+    if (!usuario) {
+      localStorage.clear();
+      window.location.href = "index.html";
+    }
+
+    const infoEl = document.getElementById("infoUsuario");
+    infoEl.textContent = nombre ? `${nombre} — (${rol})` : `Usuario: ${usuario} | Rol: ${rol}`;
+
+    const btnDevol = document.getElementById("btnDevoluciones");
+    const btnAdmin = document.getElementById("btnAdmin");
+    const btnReportes = document.getElementById("btnReportes");
+    const btnAuditoria = document.getElementById("btnAuditoria");
+    const zonaAdmin = document.getElementById("zonaAdmin");
+    const zonaAuditor = document.getElementById("zonaAuditor");
+    const btnCerrar = document.getElementById("btnCerrar");
+    const btnClave = document.getElementById("btnClave");
+
+    function ajustarVistaSegunRol(r) {
+      zonaAdmin.classList.add("hidden");
+      zonaAuditor.classList.add("hidden");
+      btnReportes.classList.add("hidden");
+
+      if (r === "admin") {
+        zonaAdmin.classList.remove("hidden");
+        zonaAuditor.classList.remove("hidden");
+        btnReportes.classList.remove("hidden");
+      } else if (r === "auditor" || r === "auditoria") {
+        zonaAuditor.classList.remove("hidden");
+      } else {
+        btnReportes.classList.remove("hidden");
+      }
+    }
+
+    ajustarVistaSegunRol(rol);
+
+    btnDevol.addEventListener("click", () => window.location.href = "devoluciones.html");
+    btnAdmin && btnAdmin.addEventListener("click", () => window.location.href = "admin.html");
+    btnAuditoria && btnAuditoria.addEventListener("click", () => window.location.href = "auditoria.html");
+    btnReportes && btnReportes.addEventListener("click", () => window.location.href = "reportes.html");
+
+    // ✅ Nuevo: cambiar clave
+    btnClave.addEventListener("click", () => window.location.href = "cambiar_clave.html");
+
+    btnCerrar.addEventListener("click", () => {
+      localStorage.clear();
+      window.location.href = "index.html";
+    });
+
+    let timeout;
+    function iniciarTemporizador() {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        alert("Sesión cerrada por inactividad.");
+        localStorage.clear();
+        window.location.href = "index.html";
+      }, 10*60*1000);
+    }
+    ["click","touchstart","keypress"].forEach(e => window.addEventListener(e, iniciarTemporizador));
+    iniciarTemporizador();
+  </script>
+</body>
+</html>

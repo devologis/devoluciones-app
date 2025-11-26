@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Auditoría</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        input {
+            padding: 6px;
+            margin-bottom: 10px;
+            width: 200px;
+        }
+        button {
+            padding: 8px 14px;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        #resultado {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            width: 320px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Auditoría de Registros</h1>
+
+    <label>Número de factura:</label><br>
+    <input type="text" id="factura"><br>
+
+    <label>Código del producto:</label><br>
+    <input type="text" id="codigo"><br>
+
+    <button id="btnBuscar">Buscar</button>
+
+    <div id="resultado">
+        <h3>Resultado</h3>
+        <p><strong>Cantidad Buena:</strong></p>
+        <input type="number" id="cantBuena">
+
+        <p><strong>Cantidad Averiada:</strong></p>
+        <input type="number" id="cantAveriada">
+
+        <br><br>
+        <button id="btnGuardar">Guardar Cambios</button>
+    </div>
+
+    <br>
+    <button onclick="location.href='dashboard.html'">Volver</button>
+
+    <script type="module" src="js/auditoria.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Generar Reportes</title>
+</head>
+<body>
+    <h1>Generar Reportes</h1>
+
+    <label>Fecha Desde:</label><br>
+    <input type="date" id="desde"><br><br>
+
+    <label>Fecha Hasta:</label><br>
+    <input type="date" id="hasta"><br><br>
+
+    <button id="btnDescargar">Descargar Excel</button>
+    <br><br>
+
+    <button onclick="location.href='dashboard.html'">Volver al Panel</button>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <script type="module" src="js/reportes.js"></script>
+</body>
+</html>
