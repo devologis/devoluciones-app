@@ -1,73 +1,104 @@
-import { getFirestore, collection, query, where, getDocs, addDoc, onSnapshot, deleteDoc, doc } 
-    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+    getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc, getDoc 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase.js";
 
 const db = getFirestore(app);
 
-// Función para agregar un nuevo usuario
+// ✅ Verificar rol antes de permitir acceso
+document.addEventListener("DOMContentLoaded", () => {
+    const rol = localStorage.getItem("rol");
+
+    if (rol !== "admin") {
+        alert("Acceso denegado. Solo administradores.");
+        window.location.href = "index.html";
+        return;
+    }
+
+    cargarUsuarios();
+});
+
+// ✅ Agregar usuario con clave asignada manualmente
 const agregarUsuario = async (usuario, nombre, clave, rol) => {
     try {
-        const usuariosRef = collection(db, "usuarios");
-        const q = query(usuariosRef, where("usuario", "==", usuario));
+        const usuarioRef = doc(db, "usuarios", usuario);
 
-        // Verificar si ya existe el usuario
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
+        // Verificar si ya existe
+        const existe = await getDoc(usuarioRef);
+        if (existe.exists()) {
             alert("El usuario ya existe");
             return;
         }
 
-        await addDoc(usuariosRef, {
+        // Guardar usuario
+        await setDoc(usuarioRef, {
             usuario,
             nombre,
             clave,
             rol
         });
 
-        alert("Usuario agregado correctamente");
+        alert("✅ Usuario creado correctamente");
+
+        // Limpiar campos
+        document.getElementById("usuario").value = "";
+        document.getElementById("nombre").value = "";
+        document.getElementById("clave").value = "";
+        document.getElementById("rol").value = "normal";
+
     } catch (error) {
-        console.error("Error al agregar el usuario: ", error);
-        alert("Hubo un error al agregar el usuario.");
+        console.error("Error al agregar usuario:", error);
+        alert("❌ Error al agregar usuario");
     }
 };
 
-// Escuchar cambios en la base de datos (usuarios en tiempo real)
-const cargarUsuarios = async () => {
+// ✅ Cargar usuarios en tiempo real
+const cargarUsuarios = () => {
     const usuariosRef = collection(db, "usuarios");
-    onSnapshot(usuariosRef, (snapshot) => {
-        const listaUsuarios = document.getElementById("listaUsuarios");
-        listaUsuarios.innerHTML = "";
 
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            listaUsuarios.innerHTML += `
+    onSnapshot(usuariosRef, (snapshot) => {
+        const lista = document.getElementById("listaUsuarios");
+        lista.innerHTML = "";
+
+        snapshot.forEach(docu => {
+            const data = docu.data();
+            lista.innerHTML += `
                 <tr>
                     <td>${data.usuario}</td>
                     <td>${data.nombre}</td>
                     <td>${data.rol}</td>
                     <td>
-                        <button onclick="eliminarUsuario('${doc.id}')">Eliminar</button>
+                        <button class="btnEliminar" data-user="${data.usuario}">
+                            🗑 Eliminar
+                        </button>
                     </td>
                 </tr>
             `;
         });
+
+        // ✅ Activar botones eliminar
+        document.querySelectorAll(".btnEliminar").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                eliminarUsuario(e.target.dataset.user);
+            });
+        });
     });
 };
 
-// Función para eliminar un usuario
-const eliminarUsuario = async (id) => {
-    if (confirm("¿Estás seguro de eliminar este usuario?")) {
-        try {
-            await deleteDoc(doc(db, "usuarios", id));
-            alert("Usuario eliminado correctamente");
-        } catch (error) {
-            console.error("Error al eliminar el usuario: ", error);
-            alert("Hubo un error al eliminar el usuario.");
-        }
+// ✅ Eliminar usuario (solo admin)
+const eliminarUsuario = async (usuario) => {
+    if (!confirm("¿Eliminar este usuario?")) return;
+
+    try {
+        await deleteDoc(doc(db, "usuarios", usuario));
+        alert("✅ Usuario eliminado");
+    } catch (error) {
+        console.error("Error eliminando usuario:", error);
+        alert("❌ Error al eliminar usuario");
     }
 };
 
-// Asignar eventos a los botones
+// ✅ Botón agregar usuario
 document.getElementById("btnAgregar").addEventListener("click", async () => {
     const usuario = document.getElementById("usuario").value.trim();
     const nombre = document.getElementById("nombre").value.trim();
@@ -75,13 +106,9 @@ document.getElementById("btnAgregar").addEventListener("click", async () => {
     const rol = document.getElementById("rol").value;
 
     if (!usuario || !nombre || !clave) {
-        alert("Por favor, complete todos los campos.");
+        alert("Complete todos los campos");
         return;
     }
 
     await agregarUsuario(usuario, nombre, clave, rol);
-    cargarUsuarios();
 });
-
-// Cargar la lista de usuarios cuando la página se cargue
-document.addEventListener("DOMContentLoaded", cargarUsuarios);
