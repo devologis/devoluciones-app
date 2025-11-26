@@ -1,69 +1,117 @@
-<script type="module">
-  import { getFirestore, doc, getDoc, updateDoc } 
-    from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
-  import { app } from "./firebase.js";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cambiar Clave</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f1f1f1; margin:0; padding:0; }
+    .wrap { max-width:520px; margin:10px auto; padding:18px; text-align:center; }
+    h1 { margin: 6px 0 20px; font-size:22px; }
+    input {
+      width:100%; padding:14px; margin:10px 0;
+      border:1px solid #cfcfcf; border-radius:8px; font-size:16px;
+    }
+    .btn {
+      width:100%; padding:16px; margin:14px 0; font-size:18px;
+      border-radius:10px; border:1px solid #cfcfcf; background:#e8e8e8; cursor:pointer;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-danger { background:#ffb3b3; border-color:#e6a0a0; }
+    .msg { font-size:15px; margin-top:10px; }
+  </style>
 
-  const db = getFirestore(app);
+  <!-- ✅ Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js"></script>
+  <script src="firebaseConfig.js"></script>
+</head>
+<body>
 
-  if (!localStorage.getItem("usuario")) {
-    window.location.href = "index.html";
-  }
+  <div class="wrap">
+    <h1>Cambiar Clave</h1>
 
-  const usuarioId = localStorage.getItem("usuario");
+    <input id="claveActual" type="password" placeholder="Clave Actual">
+    <input id="claveNueva" type="password" placeholder="Nueva Clave">
+    <input id="claveConfirm" type="password" placeholder="Confirmar Nueva Clave">
 
-  const claveActual = document.getElementById("claveActual");
-  const claveNueva = document.getElementById("claveNueva");
-  const claveConfirm = document.getElementById("claveConfirm");
-  const btnCambiar = document.getElementById("btnCambiar");
-  const btnVolver = document.getElementById("btnVolver");
-  const mensaje = document.getElementById("mensaje");
+    <button id="btnCambiar" class="btn">Guardar Cambios</button>
+    <button id="btnVolver" class="btn btn-danger">Volver</button>
 
-  function mostrar(msj, color="red") {
-    mensaje.style.color = color;
-    mensaje.textContent = msj;
-  }
+    <div id="mensaje" class="msg"></div>
+  </div>
 
-  btnCambiar.addEventListener("click", async () => {
-    const actual = claveActual.value.trim();
-    const nueva = claveNueva.value.trim();
-    const confirm = claveConfirm.value.trim();
+  <!-- ✅ SCRIPT CORREGIDO -->
+  <script type="module">
+    import { getFirestore, doc, getDoc, updateDoc } 
+      from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+    import { app } from "./firebase.js";
 
-    if (!actual || !nueva || !confirm) return mostrar("Completa todos los campos");
-    if (nueva.length < 4) return mostrar("La nueva clave debe tener mínimo 4 caracteres");
-    if (nueva !== confirm) return mostrar("La nueva clave no coincide");
+    const db = getFirestore(app);
 
-    try {
-      const ref = doc(db, "usuarios", usuarioId);
-      const snap = await getDoc(ref);
+    // ✅ Validar sesión
+    const usuarioId = localStorage.getItem("usuario");
+    if (!usuarioId) {
+      window.location.href = "index.html";
+    }
 
-      if (!snap.exists()) return mostrar("Usuario no encontrado");
+    const claveActual = document.getElementById("claveActual");
+    const claveNueva = document.getElementById("claveNueva");
+    const claveConfirm = document.getElementById("claveConfirm");
+    const btnCambiar = document.getElementById("btnCambiar");
+    const btnVolver = document.getElementById("btnVolver");
+    const mensaje = document.getElementById("mensaje");
 
-      const data = snap.data();
+    function mostrar(msj, color="red") {
+      mensaje.style.color = color;
+      mensaje.textContent = msj;
+    }
 
-      // ✅ Validar clave actual
-      if (data.clave !== actual) return mostrar("❌ La clave actual es incorrecta");
+    // ✅ Cambiar clave
+    btnCambiar.addEventListener("click", async () => {
+      const actual = claveActual.value.trim();
+      const nueva = claveNueva.value.trim();
+      const confirm = claveConfirm.value.trim();
 
-      // ✅ Actualizar clave
-      await updateDoc(ref, { clave: nueva });
+      if (!actual || !nueva || !confirm) return mostrar("Completa todos los campos");
+      if (nueva.length < 4) return mostrar("La nueva clave debe tener mínimo 4 caracteres");
+      if (nueva !== confirm) return mostrar("La nueva clave no coincide");
 
-      mostrar("✅ Clave actualizada con éxito", "green");
+      try {
+        const ref = doc(db, "usuarios", usuarioId);
+        const snap = await getDoc(ref);
 
-      setTimeout(() => {
+        if (!snap.exists()) return mostrar("Usuario no encontrado");
+
+        const data = snap.data();
+
+        // ✅ Validar clave actual
+        if (data.clave !== actual) return mostrar("❌ La clave actual es incorrecta");
+
+        // ✅ Actualizar clave
+        await updateDoc(ref, { clave: nueva });
+
+        mostrar("✅ Clave actualizada con éxito", "green");
+
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 1500);
+
+      } catch (e) {
+        mostrar("❌ Error al actualizar la clave");
+        console.error(e);
+      }
+    });
+
+    // ✅ Botón volver
+    btnVolver.addEventListener("click", () => {
+      const rol = localStorage.getItem("rol");
+      if (rol === "admin") {
+        window.location.href = "admin.html";
+      } else {
         window.location.href = "dashboard.html";
-      }, 1500);
-
-    } catch (e) {
-      mostrar("❌ Error al actualizar la clave");
-      console.error(e);
-    }
-  });
-
-  btnVolver.addEventListener("click", () => {
-    const rol = localStorage.getItem("rol");
-    if (rol === "admin") {
-      window.location.href = "admin.html";
-    } else {
-      window.location.href = "dashboard.html";
-    }
-  });
-</script>
+      }
+    });
+  </script>
+</body>
+</html>
