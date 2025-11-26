@@ -1,42 +1,60 @@
-import { app } from "./js/firebase.js";
-import { getFirestore, collection, query, where, getDocs }
-from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { app } from "./firebase.js";
+import {
+    getFirestore,
+    doc,
+    getDoc
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const db = getFirestore(app);
 
-document.getElementById("btnLogin").addEventListener("click", async () => {
+window.login = async function () {
     const usuario = document.getElementById("usuario").value.trim();
     const clave = document.getElementById("clave").value.trim();
 
-    if (!usuario || !clave) {
-        alert("Por favor complete todos los campos");
+    // Validar campos
+    if (usuario === "" || clave === "") {
+        alert("Ingrese usuario y clave.");
+        return;
+    }
+
+    // Validar que el usuario sea numérico
+    if (!/^\d+$/.test(usuario)) {
+        alert("El usuario debe ser numérico.");
         return;
     }
 
     try {
-        const usuariosRef = collection(db, "usuarios");
-        const q = query(usuariosRef, where("usuario", "==", usuario), where("clave", "==", clave));
-        const snapshot = await getDocs(q);
+        // Buscar usuario por ID
+        const docRef = doc(db, "usuarios", usuario);
+        const docSnap = await getDoc(docRef);
 
-        if (snapshot.empty) {
-            alert("Usuario o clave incorrectos");
+        if (!docSnap.exists()) {
+            alert("Usuario no encontrado.");
             return;
         }
 
-        const data = snapshot.docs[0].data();
+        const data = docSnap.data();
 
-        // Guardar el rol
-        localStorage.setItem("rol", data.rol);
+        // Validar clave
+        if (data.clave !== clave) {
+            alert("Clave incorrecta.");
+            return;
+        }
 
-        // Redirigir según rol
+        // Guardar sesión
+        localStorage.setItem("usuario", usuario);
+        localStorage.setItem("nombre", data.nombre || "");
+        localStorage.setItem("rol", data.rol || "normal");
+
+        // Redirigir por rol
         if (data.rol === "admin") {
             window.location.href = "admin.html";
         } else {
-            window.location.href = "index.html";
+            window.location.href = "dashboard.html";
         }
 
-    } catch (error) {
-        console.error("Error en login:", error);
-        alert("Hubo un problema al iniciar sesión");
+    } catch (err) {
+        console.error(err);
+        alert("Error al conectar con el servidor.");
     }
-});
+};
