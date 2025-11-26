@@ -18,23 +18,26 @@ const db = firebase.firestore();
 function crearAdminInicial() {
   const adminRef = db.collection("usuarios").doc("1234");
 
-  adminRef.get().then((doc) => {
-    if (!doc.exists) {
-      adminRef.set({
-        usuario: "1234",
-        clave: "9999",
-        nombre: "administrador",
-        rol: "admin",
-        admin: true
-      }).then(() => {
-        console.log("✅ Usuario admin inicial creado");
-      });
-    } else {
-      console.log("✅ Admin inicial ya existe");
-    }
-  }).catch(err => {
-    console.error("❌ Error creando admin:", err);
-  });
+  adminRef.get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return adminRef.set({
+          usuario: "1234",
+          clave: "9999",
+          nombre: "Administrador",
+          rol: "admin",
+          admin: true
+        });
+      } else {
+        console.log("✅ Admin inicial ya existe");
+      }
+    })
+    .then(() => {
+      console.log("✅ Usuario admin inicial creado");
+    })
+    .catch((err) => {
+      console.error("❌ Error creando admin:", err);
+    });
 }
 
 // ✅ Ejecutar al cargar firebase.js
