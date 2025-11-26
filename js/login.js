@@ -2,7 +2,7 @@ function login() {
   const usuario = document.getElementById("usuario").value.trim();
   const clave = document.getElementById("clave").value.trim();
 
-  // Validar campos vacíos
+  // Validar campos
   if (usuario === "" || clave === "") {
     alert("Ingrese usuario y clave.");
     return;
@@ -16,10 +16,8 @@ function login() {
 
   const db = firebase.firestore();
 
-  // Buscar usuario en colección "usuarios"
-  db.collection("usuarios")
-    .doc(usuario)
-    .get()
+  // Buscar usuario en Firestore
+  db.collection("usuarios").doc(usuario).get()
     .then(doc => {
       if (!doc.exists) {
         alert("Usuario no encontrado.");
@@ -34,13 +32,12 @@ function login() {
         return;
       }
 
-      // Guardar datos en localStorage
+      // Guardar datos en sesión local
       localStorage.setItem("usuario", usuario);
       localStorage.setItem("nombre", data.nombre || "");
       localStorage.setItem("rol", data.rol || "normal");
-      localStorage.setItem("admin", data.admin ? "true" : "false");
 
-      // Redirigir
+      // Redirigir al dashboard
       window.location.href = "dashboard.html";
     })
     .catch(err => {
