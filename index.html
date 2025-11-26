@@ -77,15 +77,64 @@
         <button onclick="login()">Ingresar</button>
     </div>
 
-    <!-- Firebase App + Firestore (NO Realtime Database) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <!-- ✅ Firebase 10 (MODULAR) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <!-- Tu configuración Firebase -->
-    <script src="./js/firebase.js"></script>
+        // ✅ Configuración Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBcLa0rhe06_7MaY8wQC5ZZJRQ1Z5h5xA",
+            authDomain: "inventariopda-b0d5b.firebaseapp.com",
+            projectId: "inventariopda-b0d5b",
+            storageBucket: "inventariopda-b0d5b.appspot.com",
+            messagingSenderId: "464585970888",
+            appId: "1:464585970888:web:f902eabdd8765648af905d"
+        };
 
-    <!-- Lógica de Login -->
-    <script src="./js/login.js"></script>
+        // ✅ Inicializar Firebase + Firestore
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ✅ Login
+        window.login = async () => {
+            const usuario = document.getElementById("usuario").value.trim();
+            const clave = document.getElementById("clave").value.trim();
+
+            if (!usuario || !clave) {
+                alert("Ingrese usuario y clave.");
+                return;
+            }
+
+            if (!/^\d+$/.test(usuario)) {
+                alert("El usuario debe ser numérico.");
+                return;
+            }
+
+            const ref = doc(db, "usuarios", usuario);
+            const snap = await getDoc(ref);
+
+            if (!snap.exists()) {
+                alert("Usuario no encontrado.");
+                return;
+            }
+
+            const data = snap.data();
+
+            if (data.clave !== clave) {
+                alert("Clave incorrecta.");
+                return;
+            }
+
+            // ✅ Guardar sesión
+            localStorage.setItem("usuario", usuario);
+            localStorage.setItem("nombre", data.nombre || "");
+            localStorage.setItem("rol", data.rol || "normal");
+
+            // ✅ Entrar al dashboard
+            window.location.href = "dashboard.html";
+        };
+    </script>
 
 </body>
 </html>
