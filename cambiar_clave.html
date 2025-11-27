@@ -4,18 +4,27 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Cambiar Clave</title>
+
   <style>
-    body { font-family: Arial, sans-serif; background:#eef1f5; margin:0; display:flex; align-items:center; justify-content:center; height:100vh; }
-    .card { background:white; width:360px; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.08); text-align:center; }
-    h2 { margin:0 0 14px; }
-    input { width:100%; padding:12px; margin-top:10px; border-radius:8px; border:1px solid #ccc; font-size:15px; }
-    button { width:100%; padding:12px; margin-top:12px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
+    body { font-family: Arial; background:#eef1f5; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+    .card { background:white; width:360px; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.1); text-align:center; }
+    input { width:100%; padding:12px; margin-top:10px; border-radius:8px; border:1px solid #ccc; }
+    button { width:100%; padding:12px; margin-top:12px; border-radius:8px; font-weight:bold; cursor:pointer; border:none; }
     #btnGuardar { background:#3f51ff; color:white; }
-    #btnVolver { background:#9ca3af; color:white; }
-    #mensaje { margin-top:12px; font-size:14px; min-height:18px; }
+    #btnVolver { background:#6b7280; color:white; }
+    #mensaje { margin-top:12px; min-height:18px; font-size:14px; }
   </style>
+
+  <!-- Firebase 8 (tu proyecto usa esta versión) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <!-- Tu config real -->
+  <script src="./js/firebase.js"></script>
+
 </head>
 <body>
+
   <div class="card">
     <h2>Cambiar contraseña</h2>
 
@@ -28,25 +37,21 @@
     <div id="mensaje"></div>
   </div>
 
-  <script type="module">
-    import { db } from "./js/firebase.js";
-    import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+  <script>
+    console.log("cambiar_clave.html cargado (Firebase v8)");
 
-    console.log("cambiar_clave.html cargado OK");
+    const db = firebase.firestore();
 
     const claveActual = document.getElementById("claveActual");
-    const claveNueva  = document.getElementById("claveNueva");
-    const btnGuardar  = document.getElementById("btnGuardar");
-    const btnVolver   = document.getElementById("btnVolver");
-    const mensaje     = document.getElementById("mensaje");
+    const claveNueva = document.getElementById("claveNueva");
+    const btnGuardar = document.getElementById("btnGuardar");
+    const btnVolver = document.getElementById("btnVolver");
+    const mensaje = document.getElementById("mensaje");
 
     const usuarioID = localStorage.getItem("usuario");
-    const rol = localStorage.getItem("rol");
 
     if (!usuarioID) {
-      mensaje.textContent = "No hay sesión activa.";
-      setTimeout(() => window.location.href = "index.html", 800);
-      throw new Error("No session");
+      window.location.href = "index.html";
     }
 
     function mostrar(msg, color="red") {
@@ -56,32 +61,28 @@
     }
 
     btnGuardar.addEventListener("click", async () => {
-
       const actual = claveActual.value.trim();
-      const nueva  = claveNueva.value.trim();
+      const nueva = claveNueva.value.trim();
 
-      if (!actual || !nueva) {
-        mostrar("Completa todos los campos");
-        return;
-      }
+      if (!actual || !nueva) return mostrar("Completa todos los campos");
 
       try {
-        const ref = doc(db, "usuarios", usuarioID);
-        const snap = await getDoc(ref);
+        const docRef = db.collection("usuarios").doc(usuarioID);
+        const docSnap = await docRef.get();
 
-        if (!snap.exists()) {
+        if (!docSnap.exists) {
           mostrar("Usuario no encontrado");
           return;
         }
 
-        const data = snap.data();
+        const data = docSnap.data();
 
         if (String(data.clave) !== String(actual)) {
           mostrar("Clave actual incorrecta");
           return;
         }
 
-        await updateDoc(ref, { clave: nueva });
+        await docRef.update({ clave: nueva });
 
         mostrar("✔ Clave actualizada correctamente", "green");
 
@@ -95,9 +96,9 @@
     });
 
     btnVolver.addEventListener("click", () => {
-      if (rol === "admin") window.location.href = "admin.html";
-      else window.location.href = "dashboard.html";
+      window.location.href = "dashboard.html";
     });
   </script>
+
 </body>
 </html>
