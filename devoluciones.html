@@ -10,16 +10,25 @@
             font-family: Arial, sans-serif;
             background: #f2f2f2;
             padding: 15px;
-            max-width: 100%;
         }
-        h2 { text-align: center; }
+        h2 { 
+            text-align: center; 
+            margin-bottom: 15px;
+        }
         form {
             background: white;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            max-width: 900px;
+            margin: auto;
         }
-        label { display: block; margin-top: 10px; font-size: 15px; }
+        label { 
+            display: block; 
+            margin-top: 12px; 
+            font-size: 15px; 
+            font-weight: bold;
+        }
         input {
             width: 100%;
             padding: 10px;
@@ -27,7 +36,12 @@
             margin-top: 3px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            outline: none;
         }
+        input:focus {
+            border-color: #90caf9;
+        }
+
         .botones {
             display: flex;
             gap: 10px;
@@ -42,6 +56,7 @@
             cursor: pointer;
             background: #e0e0e0;
         }
+
         #btn_finalizar { background: #90caf9; }
         #btn_cerrar { background: #ffb3b3; }
     </style>
@@ -52,25 +67,26 @@
 <h2>Registro de Devoluciones</h2>
 
 <form id="formDev">
-    <label>N° Factura</label>
+
+    <label for="factura">N° Factura</label>
     <input type="number" id="factura" autocomplete="off" />
 
-    <label>Código</label>
+    <label for="codigo">Código</label>
     <input type="text" id="codigo" autocomplete="off" />
 
-    <label>Lote</label>
+    <label for="lote">Lote</label>
     <input type="text" id="lote" autocomplete="off" />
 
-    <label>Fecha Vencimiento (MM/AAAA)</label>
+    <label for="fecha_vto">Fecha Vencimiento (MM/AAAA)</label>
     <input type="text" id="fecha_vto" autocomplete="off" placeholder="MM/AAAA" />
 
-    <label>Cantidad Buen Estado</label>
+    <label for="cant_buen">Cantidad Buen Estado</label>
     <input type="number" id="cant_buen" />
 
-    <label>Averías</label>
+    <label for="averias">Averías</label>
     <input type="number" id="averias" />
 
-    <label>Total Recibido</label>
+    <label for="total">Total Recibido</label>
     <input type="number" id="total" readonly />
 
     <div class="botones">
@@ -80,124 +96,7 @@
     </div>
 </form>
 
-<script type="module">
-
-import { db } from "../js/firebase.js";
-import { addDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-// ===============================
-// 🧩 VALIDAR LOGIN
-// ===============================
-if (!localStorage.getItem("usuario")) {
-    window.location.href = "index.html";
-}
-
-const usuarioActual = localStorage.getItem("usuario");
-
-// ===============================
-// 🔢 CALCULAR TOTAL
-// ===============================
-function calcTotal() {
-    let b = Number(document.getElementById("cant_buen").value);
-    let a = Number(document.getElementById("averias").value);
-    document.getElementById("total").value = b + a;
-}
-
-document.getElementById("cant_buen").addEventListener("input", calcTotal);
-document.getElementById("averias").addEventListener("input", calcTotal);
-
-// ===============================
-// 💾 GUARDAR CODIGO (NO FACTURA)
-// ===============================
-async function guardarCodigo() {
-
-    let factura = document.getElementById("factura").value.trim();
-    let codigo = document.getElementById("codigo").value.trim();
-    let lote = document.getElementById("lote").value.trim();
-    let fecha_vto = document.getElementById("fecha_vto").value.trim();
-    let cant_buen = Number(document.getElementById("cant_buen").value);
-    let averias = Number(document.getElementById("averias").value);
-    let total = cant_buen + averias;
-
-    if (!factura || !codigo || !lote || !fecha_vto) {
-        alert("Complete todos los campos obligatorios.");
-        return false;
-    }
-
-    await addDoc(collection(db, "devoluciones"), {
-        factura,
-        codigo,
-        lote,
-        fecha_vto,
-        cant_buen,
-        averias,
-        total,
-        usuario_registra: usuarioActual,
-        fecha_registro: new Date()
-    });
-
-    return true;
-}
-
-// ===============================
-// ➡️ BOTÓN SIGUIENTE CÓDIGO
-// ===============================
-document.getElementById("btn_siguiente").addEventListener("click", async () => {
-
-    let ok = await guardarCodigo();
-    if (!ok) return;
-
-    alert("Código guardado. Ingrese el siguiente.");
-
-    // Limpia solo campos del código
-    document.getElementById("codigo").value = "";
-    document.getElementById("lote").value = "";
-    document.getElementById("fecha_vto").value = "";
-    document.getElementById("cant_buen").value = "";
-    document.getElementById("averias").value = "";
-    document.getElementById("total").value = "";
-});
-
-// ===============================
-// ✅ FINALIZAR FACTURA
-// ===============================
-document.getElementById("btn_finalizar").addEventListener("click", async () => {
-
-    let ok = await guardarCodigo();
-    if (!ok) return;
-
-    let cajas = prompt("Ingrese cantidad total de cajas del pedido:");
-
-    if (!cajas || isNaN(cajas)) {
-        alert("Debe ingresar un número válido.");
-        return;
-    }
-
-    // Guardamos cajas asociadas a la factura
-    await addDoc(collection(db, "facturas"), {
-        factura: document.getElementById("factura").value.trim(),
-        cajas: Number(cajas),
-        usuario_registra: usuarioActual,
-        fecha_registro: new Date()
-    });
-
-    alert("Factura finalizada correctamente.");
-
-    // Limpiar todo
-    document.getElementById("formDev").reset();
-});
-
-// ===============================
-// 🚪 Cerrar sesión
-// ===============================
-document.getElementById("btn_cerrar").addEventListener("click", () => {
-    localStorage.clear();
-    window.location.href = "index.html";
-});
-
-</script>
+<script type="module" src="devoluciones.js"></script>
 
 </body>
 </html>
-
-
