@@ -4,114 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Cambiar Clave</title>
-
-  <!-- Estilos -->
   <style>
     body { font-family: Arial, sans-serif; background:#eef1f5; margin:0; display:flex; align-items:center; justify-content:center; height:100vh; }
     .card { background:white; width:360px; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.08); text-align:center; }
     h2 { margin:0 0 14px; }
-    .field { position:relative; margin-top:12px; }
-    input { width:100%; padding:12px 40px 12px 12px; border-radius:8px; border:1px solid #cfcfcf; font-size:15px; }
+    input { width:100%; padding:12px; margin-top:10px; border-radius:8px; border:1px solid #ccc; font-size:15px; }
     button { width:100%; padding:12px; margin-top:12px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
     #btnGuardar { background:#3f51ff; color:white; }
     #btnVolver { background:#9ca3af; color:white; }
     #mensaje { margin-top:12px; font-size:14px; min-height:18px; }
   </style>
-
-  <!-- Firebase v10 (MODULAR) -->
-  <script type="module">
-    import { app, db } from "./firebaseConfig.js";
-    import {
-      doc,
-      getDoc,
-      updateDoc
-    } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
-
-    document.addEventListener("DOMContentLoaded", () => {
-
-      const claveActual = document.getElementById("claveActual");
-      const claveNueva = document.getElementById("claveNueva");
-      const btnGuardar = document.getElementById("btnGuardar");
-      const btnVolver = document.getElementById("btnVolver");
-      const mensaje = document.getElementById("mensaje");
-
-      function mostrar(msj, color="red") {
-        mensaje.style.color = color;
-        mensaje.textContent = msj;
-      }
-
-      // Validar sesión
-      const usuarioID = localStorage.getItem("usuario");
-      if (!usuarioID) {
-        mostrar("No hay sesión activa.");
-        setTimeout(() => window.location.href = "index.html", 1200);
-        return;
-      }
-
-      console.log("DEBUG usuarioID =", usuarioID);
-
-      // Evento GUARDAR
-      btnGuardar.addEventListener("click", async () => {
-        const actual = claveActual.value.trim();
-        const nueva = claveNueva.value.trim();
-
-        if (!actual || !nueva) return mostrar("Completa todos los campos");
-
-        try {
-          const ref = doc(db, "usuarios", usuarioID);
-          const snap = await getDoc(ref);
-
-          if (!snap.exists()) {
-            mostrar("Usuario no encontrado");
-            console.error("DOC no existe:", usuarioID);
-            return;
-          }
-
-          const data = snap.data();
-          console.log("DEBUG DATA", data);
-
-          // Validar clave actual
-          if (String(data.clave) !== String(actual)) {
-            return mostrar("La clave actual es incorrecta");
-          }
-
-          // Actualizar clave
-          await updateDoc(ref, { clave: nueva });
-
-          mostrar("✔ Clave actualizada con éxito", "green");
-
-          claveActual.value = "";
-          claveNueva.value = "";
-
-        } catch (err) {
-          console.error("ERROR update:", err);
-          mostrar("Error al actualizar la clave");
-        }
-      });
-
-      // Evento VOLVER
-      btnVolver.addEventListener("click", () => {
-        const rol = localStorage.getItem("rol");
-        if (rol === "admin") window.location.href = "admin.html";
-        else window.location.href = "dashboard.html";
-      });
-
-    });
-  </script>
-
 </head>
 <body>
-
   <div class="card">
     <h2>Cambiar contraseña</h2>
 
-    <div class="field">
-      <input id="claveActual" type="password" placeholder="Clave actual">
-    </div>
-
-    <div class="field">
-      <input id="claveNueva" type="password" placeholder="Nueva clave">
-    </div>
+    <input id="claveActual" type="password" placeholder="Clave actual">
+    <input id="claveNueva" type="password" placeholder="Nueva clave">
 
     <button id="btnGuardar">Guardar</button>
     <button id="btnVolver">Volver</button>
@@ -119,5 +28,76 @@
     <div id="mensaje"></div>
   </div>
 
+  <script type="module">
+    import { db } from "./js/firebase.js";
+    import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+    console.log("cambiar_clave.html cargado OK");
+
+    const claveActual = document.getElementById("claveActual");
+    const claveNueva  = document.getElementById("claveNueva");
+    const btnGuardar  = document.getElementById("btnGuardar");
+    const btnVolver   = document.getElementById("btnVolver");
+    const mensaje     = document.getElementById("mensaje");
+
+    const usuarioID = localStorage.getItem("usuario");
+    const rol = localStorage.getItem("rol");
+
+    if (!usuarioID) {
+      mensaje.textContent = "No hay sesión activa.";
+      setTimeout(() => window.location.href = "index.html", 800);
+      throw new Error("No session");
+    }
+
+    function mostrar(msg, color="red") {
+      mensaje.style.color = color;
+      mensaje.textContent = msg;
+      console.log(msg);
+    }
+
+    btnGuardar.addEventListener("click", async () => {
+
+      const actual = claveActual.value.trim();
+      const nueva  = claveNueva.value.trim();
+
+      if (!actual || !nueva) {
+        mostrar("Completa todos los campos");
+        return;
+      }
+
+      try {
+        const ref = doc(db, "usuarios", usuarioID);
+        const snap = await getDoc(ref);
+
+        if (!snap.exists()) {
+          mostrar("Usuario no encontrado");
+          return;
+        }
+
+        const data = snap.data();
+
+        if (String(data.clave) !== String(actual)) {
+          mostrar("Clave actual incorrecta");
+          return;
+        }
+
+        await updateDoc(ref, { clave: nueva });
+
+        mostrar("✔ Clave actualizada correctamente", "green");
+
+        claveActual.value = "";
+        claveNueva.value = "";
+
+      } catch (error) {
+        console.error(error);
+        mostrar("Error actualizando la clave");
+      }
+    });
+
+    btnVolver.addEventListener("click", () => {
+      if (rol === "admin") window.location.href = "admin.html";
+      else window.location.href = "dashboard.html";
+    });
+  </script>
 </body>
 </html>
