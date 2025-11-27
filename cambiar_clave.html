@@ -1,117 +1,119 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Cambiar Clave</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#f1f1f1; margin:0; padding:0; }
-    .wrap { max-width:520px; margin:10px auto; padding:18px; text-align:center; }
-    h1 { margin: 6px 0 20px; font-size:22px; }
-    input {
-      width:100%; padding:14px; margin:10px 0;
-      border:1px solid #cfcfcf; border-radius:8px; font-size:16px;
-    }
-    .btn {
-      width:100%; padding:16px; margin:14px 0; font-size:18px;
-      border-radius:10px; border:1px solid #cfcfcf; background:#e8e8e8; cursor:pointer;
-    }
-    .btn:active { transform: translateY(1px); }
-    .btn-danger { background:#ffb3b3; border-color:#e6a0a0; }
-    .msg { font-size:15px; margin-top:10px; }
-  </style>
+    <meta charset="UTF-8" />
+    <title>Cambiar contraseña</title>
+    <script type="module">
+        import { auth } from "./js/firebase.js";
+        import { updatePassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
 
-  <!-- ✅ Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js"></script>
-  <script src="firebaseConfig.js"></script>
+        let usuarioActual = null;
+
+        // Detectar usuario logueado
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                alert("Debes iniciar sesión.");
+                window.location.href = "login.html";
+            } else {
+                usuarioActual = user;
+            }
+        });
+
+        // Cambiar la contraseña
+        async function cambiarClave() {
+            if (!usuarioActual) {
+                alert("No hay usuario autenticado.");
+                return;
+            }
+
+            const nuevaClave = document.getElementById("nuevaClave").value.trim();
+
+            if (nuevaClave.length < 6) {
+                alert("La contraseña debe tener mínimo 6 caracteres.");
+                return;
+            }
+
+            try {
+                await updatePassword(usuarioActual, nuevaClave);
+                alert("✅ Contraseña actualizada exitosamente.");
+                document.getElementById("nuevaClave").value = "";
+            } catch (error) {
+                console.error(error);
+                alert("❌ Error al cambiar la contraseña: " + error.message);
+            }
+        }
+
+        // Botón volver
+        function volver() {
+            window.location.href = "index.html";
+        }
+
+        window.cambiarClave = cambiarClave;
+        window.volver = volver;
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #e5e7eb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 330px;
+            text-align: center;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin-top: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .btn-guardar {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-volver {
+            background: #9ca3af;
+            color: white;
+        }
+
+        button:hover {
+            opacity: .9;
+        }
+    </style>
 </head>
+
 <body>
+    <div class="card">
+        <h2>Cambiar contraseña</h2>
 
-  <div class="wrap">
-    <h1>Cambiar Clave</h1>
+        <input type="password" id="nuevaClave" placeholder="Nueva contraseña">
 
-    <input id="claveActual" type="password" placeholder="Clave Actual">
-    <input id="claveNueva" type="password" placeholder="Nueva Clave">
-    <input id="claveConfirm" type="password" placeholder="Confirmar Nueva Clave">
-
-    <button id="btnCambiar" class="btn">Guardar Cambios</button>
-    <button id="btnVolver" class="btn btn-danger">Volver</button>
-
-    <div id="mensaje" class="msg"></div>
-  </div>
-
-  <!-- ✅ SCRIPT CORREGIDO -->
-  <script type="module">
-    import { getFirestore, doc, getDoc, updateDoc } 
-      from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
-    import { app } from "./firebase.js";
-
-    const db = getFirestore(app);
-
-    // ✅ Validar sesión
-    const usuarioId = localStorage.getItem("usuario");
-    if (!usuarioId) {
-      window.location.href = "index.html";
-    }
-
-    const claveActual = document.getElementById("claveActual");
-    const claveNueva = document.getElementById("claveNueva");
-    const claveConfirm = document.getElementById("claveConfirm");
-    const btnCambiar = document.getElementById("btnCambiar");
-    const btnVolver = document.getElementById("btnVolver");
-    const mensaje = document.getElementById("mensaje");
-
-    function mostrar(msj, color="red") {
-      mensaje.style.color = color;
-      mensaje.textContent = msj;
-    }
-
-    // ✅ Cambiar clave
-    btnCambiar.addEventListener("click", async () => {
-      const actual = claveActual.value.trim();
-      const nueva = claveNueva.value.trim();
-      const confirm = claveConfirm.value.trim();
-
-      if (!actual || !nueva || !confirm) return mostrar("Completa todos los campos");
-      if (nueva.length < 4) return mostrar("La nueva clave debe tener mínimo 4 caracteres");
-      if (nueva !== confirm) return mostrar("La nueva clave no coincide");
-
-      try {
-        const ref = doc(db, "usuarios", usuarioId);
-        const snap = await getDoc(ref);
-
-        if (!snap.exists()) return mostrar("Usuario no encontrado");
-
-        const data = snap.data();
-
-        // ✅ Validar clave actual
-        if (data.clave !== actual) return mostrar("❌ La clave actual es incorrecta");
-
-        // ✅ Actualizar clave
-        await updateDoc(ref, { clave: nueva });
-
-        mostrar("✅ Clave actualizada con éxito", "green");
-
-        setTimeout(() => {
-          window.location.href = "dashboard.html";
-        }, 1500);
-
-      } catch (e) {
-        mostrar("❌ Error al actualizar la clave");
-        console.error(e);
-      }
-    });
-
-    // ✅ Botón volver
-    btnVolver.addEventListener("click", () => {
-      const rol = localStorage.getItem("rol");
-      if (rol === "admin") {
-        window.location.href = "admin.html";
-      } else {
-        window.location.href = "dashboard.html";
-      }
-    });
-  </script>
+        <button class="btn-guardar" onclick="cambiarClave()">Guardar</button>
+        <button class="btn-volver" onclick="volver()">Volver</button>
+    </div>
 </body>
 </html>
