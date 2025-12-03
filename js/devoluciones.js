@@ -7,8 +7,10 @@ if (!localStorage.getItem("usuario")) {
 
 const usuarioActual = localStorage.getItem("usuario");
 
-import { db } from "../js/firebase.js";
-import { addDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+// ===============================
+// URL DEL WEBAPP GOOGLE APPS SCRIPT
+// ===============================
+const WEBAPP_URL = "⛔ PÉGAME AQUÍ TU URL DEL DEPLOY WEBAPP";  
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -22,11 +24,20 @@ document.addEventListener("DOMContentLoaded", () => {
         input.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
                 e.preventDefault();
+
+                // Recalcular total por si está en los campos
+                if (input.id === "cant_buen" || input.id === "averias") {
+                    actualizarTotal();
+                }
+
                 if (inputs[index + 1]) inputs[index + 1].focus();
             }
         });
     });
 
+    // ===============================
+    // OBTENER CAMPOS
+    // ===============================
     const facturaInput = document.getElementById("factura");
     const codigoInput = document.getElementById("codigo");
     const loteInput = document.getElementById("lote");
@@ -35,8 +46,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const averiasInput = document.getElementById("averias");
     const totalInput = document.getElementById("total");
 
+
     // ===============================
-    // SUMA AUTOMÁTICA
+    // SUMA AUTOMÁTICA DEL TOTAL
     // ===============================
     function actualizarTotal() {
         let b = parseInt(buenInput.value) || 0;
@@ -49,62 +61,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // ===============================
-    // VALIDAR FECHA MENSUAL (MM/YYYY)
-    // ===============================
-    vencInput.addEventListener("blur", () => {
-
-        let texto = vencInput.value.trim();
-        const regex = /^(\d{1,2})-(\d{4})$/;
-        const match = texto.match(regex);
-
-        if (!match) {
-            alert("Formato inválido. Use: mes-año (ej: 10-2026)");
-            vencInput.value = "";
-            return;
-        }
-
-        let mes = parseInt(match[1]);
-        let year = parseInt(match[2]);
-
-        if (mes < 1 || mes > 12) {
-            alert("Mes inválido. Debe ser entre 1 y 12.");
-            vencInput.value = "";
-            return;
-        }
-
-        // Último día del mes
-        const lastDay = new Date(year, mes, 0);
-        const dia = lastDay.getDate().toString().padStart(2, "0");
-
-        // Validación 6 meses
-        const hoy = new Date();
-        const seisMesesDespues = new Date();
-        seisMesesDespues.setMonth(hoy.getMonth() + 6);
-
-        if (lastDay < seisMesesDespues) {
-            alert("Vencimiento mínimo de 6 meses: NO CUMPLE.");
-            vencInput.value = "";
-            return;
-        }
-
-        const mesesInv = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-        const mesAbrev = mesesInv[mes - 1];
-
-        vencInput.value = `${dia}-${mesAbrev}-${year}`;
-        vencInput.dataset.iso = `${year}-${String(mes).padStart(2, "0")}-${dia}`;
-    });
-
-
-    // ===============================
-    // FUNCIÓN PARA GUARDAR UN CÓDIGO
+    // GUARDAR UN CÓDIGO EN GOOGLE SHEETS
     // ===============================
     async function guardarCodigo() {
 
         let factura = facturaInput.value.trim();
-        let codigo  = codigoInput.value.trim();
-        let lote    = loteInput.value.trim();
+        let codigo = codigoInput.value.trim();
+        let lote = loteInput.value.trim();
         let fecha_vto = vencInput.value.trim();
-        let fecha_iso = vencInput.dataset.iso || "";
         let cant_buen = Number(buenInput.value);
         let averias = Number(averiasInput.value);
         let total = cant_buen + averias;
@@ -114,25 +78,36 @@ document.addEventListener("DOMContentLoaded", () => {
             return false;
         }
 
-        await addDoc(collection(db, "devoluciones"), {
+        const payload = {
+            tipo: "codigo",
             factura,
             codigo,
             lote,
             fecha_vto,
-            fecha_iso,
-            cant_buen,
+            buen_estado: cant_buen,
             averias,
             total,
-            usuario_registra: usuarioActual,
-            fecha_registro: new Date()
+            usuario: usuarioActual
+        };
+
+        const res = await fetch(WEBAPP_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
         });
 
-        return true;
+        const texto = await res.text();
+
+        if (texto.includes("OK_CODIGO")) {
+            return true;
+        } else {
+            alert("Error al guardar: " + texto);
+            return false;
+        }
     }
 
 
     // ===============================
-    // SIGUIENTE CÓDIGO
+    // BOTÓN SIGUIENTE CÓDIGO
     // ===============================
     document.getElementById("btn_siguiente").addEventListener("click", async () => {
 
@@ -141,14 +116,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         alert("Código guardado. Ingrese el siguiente.");
 
-        // 🔒 Bloquear número de factura
+        // Bloquear factura después del primer registro
         facturaInput.setAttribute("readonly", true);
 
-        // Limpiar campos de código
+        // Limpiar campos
         codigoInput.value = "";
         loteInput.value = "";
         vencInput.value = "";
-        delete vencInput.dataset.iso;
         buenInput.value = "";
         averiasInput.value = "";
         totalInput.value = "";
@@ -165,23 +139,34 @@ document.addEventListener("DOMContentLoaded", () => {
         let ok = await guardarCodigo();
         if (!ok) return;
 
-        let cajas = prompt("Ingrese cantidad total de cajas del pedido:");
+        let cajas = prompt("Ingrese cantidad TOTAL de cajas del pedido:");
 
         if (!cajas || isNaN(cajas)) {
             alert("Debe ingresar un número válido.");
             return;
         }
 
-        await addDoc(collection(db, "facturas"), {
+        const payload = {
+            tipo: "factura",
             factura: facturaInput.value.trim(),
             cajas: Number(cajas),
-            usuario_registra: usuarioActual,
-            fecha_registro: new Date()
+            usuario: usuarioActual
+        };
+
+        const res = await fetch(WEBAPP_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
         });
+
+        let texto = await res.text();
+
+        if (!texto.includes("OK_FACTURA")) {
+            alert("Error al guardar factura: " + texto);
+            return;
+        }
 
         alert("Factura finalizada correctamente.");
 
-        // Reset total
         document.getElementById("formDev").reset();
         facturaInput.removeAttribute("readonly");
     });
