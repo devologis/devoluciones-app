@@ -10,7 +10,7 @@ const usuarioActual = localStorage.getItem("usuario");
 // ===============================
 // URL DEL WEBAPP GOOGLE APPS SCRIPT
 // ===============================
-const WEBAPP_URL = "⛔ PÉGAME AQUÍ TU URL DEL DEPLOY WEBAPP";  
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";  
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 e.preventDefault();
 
                 // Recalcular total por si está en los campos
-                if (input.id === "cant_buen" || input.id === "averias") {
+                if (input.id === "Cantidad_Buen_Estado" || input.id === "averias") {
                     actualizarTotal();
                 }
 
@@ -38,13 +38,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===============================
     // OBTENER CAMPOS
     // ===============================
-    const facturaInput = document.getElementById("factura");
+    const facturaInput = document.getElementById("N°_Factura");
     const codigoInput = document.getElementById("codigo");
     const loteInput = document.getElementById("lote");
-    const vencInput = document.getElementById("fecha_vto");
-    const buenInput = document.getElementById("cant_buen");
+    const vencInput = document.getElementById("Fecha_Vencimiento_(MM/AAAA)");
+    const buenInput = document.getElementById("Cantidad_Buen_Estado");
     const averiasInput = document.getElementById("averias");
-    const totalInput = document.getElementById("total");
+    const totalInput = document.getElementById("Total_Recibido");
 
 
     // ===============================
