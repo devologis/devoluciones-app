@@ -10,10 +10,20 @@ const usuarioActual = localStorage.getItem("usuario");
 // ===============================
 // URL DEL WEBAPP GOOGLE APPS SCRIPT
 // ===============================
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";  
-
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
+
+    // ===============================
+    // CAMPOS (ID’s reales del HTML)
+    // ===============================
+    const facturaInput = document.getElementById("factura");
+    const codigoInput = document.getElementById("codigo");
+    const loteInput = document.getElementById("lote");
+    const vencInput = document.getElementById("fecha_vto");
+    const buenInput = document.getElementById("cant_buen");
+    const averiasInput = document.getElementById("averias");
+    const totalInput = document.getElementById("total");
 
     // ===============================
     // ENTER PASA AL SIGUIENTE CAMPO
@@ -25,8 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (e.key === "Enter") {
                 e.preventDefault();
 
-                // Recalcular total por si está en los campos
-                if (input.id === "Cantidad_Buen_Estado" || input.id === "averias") {
+                // Recalcular total
+                if (input === buenInput || input === averiasInput) {
                     actualizarTotal();
                 }
 
@@ -36,19 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ===============================
-    // OBTENER CAMPOS
-    // ===============================
-    const facturaInput = document.getElementById("N°_Factura");
-    const codigoInput = document.getElementById("codigo");
-    const loteInput = document.getElementById("lote");
-    const vencInput = document.getElementById("Fecha_Vencimiento_(MM/AAAA)");
-    const buenInput = document.getElementById("Cantidad_Buen_Estado");
-    const averiasInput = document.getElementById("averias");
-    const totalInput = document.getElementById("Total_Recibido");
-
-
-    // ===============================
-    // SUMA AUTOMÁTICA DEL TOTAL
+    // SUMA AUTOMÁTICA
     // ===============================
     function actualizarTotal() {
         let b = parseInt(buenInput.value) || 0;
@@ -59,9 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
     buenInput.addEventListener("input", actualizarTotal);
     averiasInput.addEventListener("input", actualizarTotal);
 
-
     // ===============================
-    // GUARDAR UN CÓDIGO EN GOOGLE SHEETS
+    // GUARDAR UN CÓDIGO
     // ===============================
     async function guardarCodigo() {
 
@@ -105,9 +102,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-
     // ===============================
-    // BOTÓN SIGUIENTE CÓDIGO
+    // SIGUIENTE CÓDIGO
     // ===============================
     document.getElementById("btn_siguiente").addEventListener("click", async () => {
 
@@ -116,10 +112,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         alert("Código guardado. Ingrese el siguiente.");
 
-        // Bloquear factura después del primer registro
         facturaInput.setAttribute("readonly", true);
 
-        // Limpiar campos
         codigoInput.value = "";
         loteInput.value = "";
         vencInput.value = "";
@@ -129,7 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         codigoInput.focus();
     });
-
 
     // ===============================
     // FINALIZAR FACTURA
@@ -170,7 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("formDev").reset();
         facturaInput.removeAttribute("readonly");
     });
-
 
     // ===============================
     // CERRAR SESIÓN
