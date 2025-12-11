@@ -26,6 +26,45 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalInput = document.getElementById("total");
 
     // ===============================
+    // VALIDACIÓN DE FECHA MM-AAAA
+    // ===============================
+    vencInput.addEventListener("blur", () => {
+        let valor = vencInput.value.trim(); // Ej: 02-2026
+
+        const regex = /^([0-1][0-9])[-/]([0-9]{4})$/;
+
+        if (!regex.test(valor)) {
+            alert("Formato inválido. Use MM-AAAA");
+            vencInput.value = "";
+            return;
+        }
+
+        // Extraer mes y año
+        let [mes, año] = valor.split(/[-/]/).map(Number);
+
+        // Último día del mes
+        const ultimoDia = new Date(año, mes, 0).getDate(); // día 0 siguiente mes = último día
+
+        // Construir fecha final YYYY-MM-DD
+        const fechaCompleta = `${año}-${String(mes).padStart(2, '0')}-${ultimoDia}`;
+
+        const fechaVenc = new Date(fechaCompleta);
+
+        // Validar que falten mínimo 3 meses
+        const hoy = new Date();
+        const fechaMinima = new Date(hoy.getFullYear(), hoy.getMonth() + 3, hoy.getDate());
+
+        if (fechaVenc < fechaMinima) {
+            alert("La fecha de vencimiento debe ser mínimo 3 meses superior a la fecha actual.");
+            vencInput.value = "";
+            return;
+        }
+
+        // Guardar fecha válida completa
+        vencInput.value = fechaCompleta;
+    });
+
+    // ===============================
     // ENTER PASA AL SIGUIENTE CAMPO
     // ===============================
     const inputs = document.querySelectorAll("input");
