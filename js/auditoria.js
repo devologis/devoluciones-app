@@ -4,7 +4,7 @@ if (!localStorage.getItem("usuario")) {
 }
 const usuarioActual = localStorage.getItem("usuario");
 
-// Pon aquí tu URL del WebApp (la que nos diste ya)
+// URL del WebApp
 const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const codigo = codigoInput.value.trim();
 
         if (!factura) {
-            alert("Ingrese número de factura para buscar.");
+            alert("Ingrese número de factura.");
             return;
         }
 
@@ -28,21 +28,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const url = new URL(WEBAPP_URL);
-            url.searchParams.set("action", "get");
             url.searchParams.set("factura", factura);
             if (codigo) url.searchParams.set("codigo", codigo);
 
-            const res = await fetch(url.toString(), { method: "GET" });
+            const res = await fetch(url.toString());
             const data = await res.json();
 
-            if (data.error) {
-                results.innerHTML = `<div class="small">Error: ${data.error}</div>`;
+            if (!Array.isArray(data)) {
+                results.innerHTML = "<div class='small'>No se encontraron registros.</div>";
                 return;
             }
 
-            renderTable(data.rows || []);
+            renderTable(data);
         } catch (err) {
-            results.innerHTML = `<div class="small">Error de conexión: ${err}</div>`;
+            results.innerHTML = `<div class="small">Error: ${err}</div>`;
         }
     }
 
@@ -62,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <th>Fecha Vto</th>
                     <th>Buen Estado</th>
                     <th>Averías</th>
-                    <th>Total</th>
+                    <th>Total Recibo</th>
                     <th>Usuario</th>
                     <th></th>
                 </tr>
@@ -70,34 +69,33 @@ document.addEventListener("DOMContentLoaded", () => {
             <tbody>`;
 
         rows.forEach(r => {
-            const rowNum = r.rowNumber;
-            html += `<tr data-row="${rowNum}">
-                <td>${rowNum}</td>
+            html += `
+            <tr data-row="${r.row}">
+                <td>${r.row}</td>
                 <td>${escapeHtml(r.factura)}</td>
-                <td><input data-field="codigo" value="${escapeAttr(r.codigo)}" /></td>
-                <td><input data-field="lote" value="${escapeAttr(r.lote)}" /></td>
-                <td><input data-field="fecha_vto" value="${escapeAttr(r.fecha_vto)}" placeholder="YYYY-MM-DD" /></td>
-                <td><input data-field="buen_estado" type="number" value="${escapeAttr(r.buen_estado)}" /></td>
-                <td><input data-field="averias" type="number" value="${escapeAttr(r.averias)}" /></td>
-                <td><input data-field="total" type="number" value="${escapeAttr(r.total)}" /></td>
-                <td>${escapeHtml(r.usuario || "")}</td>
-                <td><button class="saveBtn" data-row="${rowNum}">Guardar</button></td>
+                <td><input data-field="codigo" value="${escapeAttr(r.codigo)}"></td>
+                <td><input data-field="lote" value="${escapeAttr(r.lote)}"></td>
+                <td><input data-field="fecha_vto" value="${escapeAttr(r.fecha_vto)}" placeholder="YYYY-MM-DD"></td>
+                <td><input data-field="buen_estado" type="number" value="${escapeAttr(r.buen_estado)}"></td>
+                <td><input data-field="averias" type="number" value="${escapeAttr(r.averias)}"></td>
+                <td><input data-field="total_recibo" type="number" value="${escapeAttr(r.total_recibo)}"></td>
+                <td>${escapeHtml(r.usuario)}</td>
+                <td><button class="saveBtn" data-row="${r.row}">Guardar</button></td>
             </tr>`;
         });
 
         html += `</tbody></table>`;
         results.innerHTML = html;
 
-        // attach save handlers
         document.querySelectorAll(".saveBtn").forEach(btn => {
             btn.addEventListener("click", onSaveRow);
         });
     }
 
-    // guarda fila editada
     async function onSaveRow(e) {
         const row = Number(e.currentTarget.dataset.row);
         const tr = document.querySelector(`tr[data-row="${row}"]`);
+
         if (!tr) return alert("Fila no encontrada.");
 
         const codigo = tr.querySelector('input[data-field="codigo"]').value.trim();
@@ -105,73 +103,70 @@ document.addEventListener("DOMContentLoaded", () => {
         let fecha_vto = tr.querySelector('input[data-field="fecha_vto"]').value.trim();
         const buen_estado = Number(tr.querySelector('input[data-field="buen_estado"]').value) || 0;
         const averias = Number(tr.querySelector('input[data-field="averias"]').value) || 0;
-        const total = Number(tr.querySelector('input[data-field="total"]').value) || (buen_estado + averias);
+        const total_recibo = Number(tr.querySelector('input[data-field="total_recibo"]').value) || (buen_estado + averias);
 
-        // validaciones: campos obligatorios
         if (!codigo || !lote || !fecha_vto) {
-            alert("Completa código, lote y fecha de vencimiento (YYYY-MM-DD).");
+            alert("Completa código, lote y fecha de vencimiento.");
             return;
         }
 
-        // validar formato de fecha (aceptamos YYYY-MM-DD)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha_vto)) {
-            alert("Fecha inválida. Debe estar en formato YYYY-MM-DD.");
+            alert("Formato de fecha inválido (YYYY-MM-DD).");
             return;
         }
 
-        // Validación vencimiento mínimo 3 meses desde hoy
         const fechaV = new Date(fecha_vto);
         const hoy = new Date();
         const minimo = new Date(hoy.getFullYear(), hoy.getMonth() + 3, hoy.getDate());
         if (fechaV < minimo) {
-            alert("La fecha de vencimiento debe ser al menos 3 meses superior a la fecha actual.");
+            alert("Fecha de vencimiento debe ser mínimo 3 meses mayor a hoy.");
             return;
         }
 
-        // payload update
         const payload = {
             tipo: "update",
-            row: row,
+            row,
             codigo,
             lote,
             fecha_vto,
             buen_estado,
             averias,
-            total,
+            total_recibo,
             usuario: usuarioActual
         };
 
-        // bloquear botón y dar feedback
-        e.currentTarget.disabled = true;
-        const oldText = e.currentTarget.innerText;
-        e.currentTarget.innerText = "Guardando...";
+        const btn = e.currentTarget;
+        const txt = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Guardando...";
 
         try {
             const res = await fetch(WEBAPP_URL, {
                 method: "POST",
                 body: JSON.stringify(payload)
             });
-            const texto = await res.text();
-            if (texto && texto.indexOf("OK_UPDATE") !== -1) {
-                alert("Registro actualizado correctamente.");
+
+            const resp = await res.text();
+
+            if (resp.includes("OK_UPDATE")) {
+                alert("Actualizado correctamente.");
             } else {
-                alert("Error actualizando: " + texto);
+                alert("Error: " + resp);
             }
         } catch (err) {
             alert("Error de conexión: " + err);
         } finally {
-            e.currentTarget.disabled = false;
-            e.currentTarget.innerText = oldText;
+            btn.disabled = false;
+            btn.textContent = txt;
         }
     }
 
-    // small helpers
     function escapeHtml(s) {
-        if (s === null || typeof s === "undefined") return "";
+        if (!s) return "";
         return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
     }
+
     function escapeAttr(s) {
-        return escapeHtml(s).replace(/"/g, "&quot;");
+        return escapeHtml(s || "").replace(/"/g, "&quot;");
     }
 });
-
