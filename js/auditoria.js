@@ -4,7 +4,8 @@ if (!localStorage.getItem("usuario")) {
 }
 const usuarioActual = localStorage.getItem("usuario");
 
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
+const WEBAPP_URL =
+  "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -49,47 +50,62 @@ document.addEventListener("DOMContentLoaded", () => {
       const div = document.createElement("div");
       div.className = "result-card";
 
+      const totalCalc = Number(r.buen_estado) + Number(r.averias);
+
       div.innerHTML = `
         <label>Código</label>
-        <input value="${r.codigo}" data-f="codigo">
+        <input data-f="codigo" value="${r.codigo}">
 
         <label>Lote</label>
-        <input value="${r.lote}" data-f="lote">
+        <input data-f="lote" value="${r.lote}">
 
         <label>Fecha vencimiento</label>
-        <input type="date" value="${r.fecha_vto}" data-f="fecha_vto">
+        <input type="date" data-f="fecha_vto" value="${r.fecha_vto}">
 
         <label>Buen estado</label>
-        <input type="number" value="${r.buen_estado}" data-f="buen">
+        <input type="number" data-f="buen_estado" value="${r.buen_estado}">
 
         <label>Averías</label>
-        <input type="number" value="${r.averias}" data-f="averias">
+        <input type="number" data-f="averias" value="${r.averias}">
 
         <label>Total recibido</label>
-        <input class="total" value="${Number(r.buen_estado) + Number(r.averias)}" disabled>
+        <input data-f="total_recibo" value="${totalCalc}" disabled>
 
         <button>Guardar cambios</button>
       `;
 
-      const inputs = div.querySelectorAll("input[data-f='buen'], input[data-f='averias']");
-      inputs.forEach(i => i.addEventListener("input", () => {
-        const b = Number(div.querySelector("[data-f='buen']").value) || 0;
-        const a = Number(div.querySelector("[data-f='averias']").value) || 0;
-        div.querySelector(".total").value = b + a;
-      }));
+      // recalcular total automáticamente
+      const be = div.querySelector('[data-f="buen_estado"]');
+      const av = div.querySelector('[data-f="averias"]');
+      const totalInp = div.querySelector('[data-f="total_recibo"]');
 
+      [be, av].forEach(i => {
+        i.addEventListener("input", () => {
+          totalInp.value =
+            (Number(be.value) || 0) + (Number(av.value) || 0);
+        });
+      });
+
+      // guardar
       div.querySelector("button").addEventListener("click", async () => {
+
         const payload = {
           tipo: "update",
           row: r.rowNumber,
-          codigo: div.querySelector("[data-f='codigo']").value.trim(),
-          lote: div.querySelector("[data-f='lote']").value.trim(),
-          fecha_vto: div.querySelector("[data-f='fecha_vto']").value,
-          buen_estado: Number(div.querySelector("[data-f='buen']").value) || 0,
-          averias: Number(div.querySelector("[data-f='averias']").value) || 0,
-          total: Number(div.querySelector(".total").value),
+
+          // 👇 NOMBRES IGUALES A LOS ENCABEZADOS
+          codigo: div.querySelector('[data-f="codigo"]').value.trim(),
+          lote: div.querySelector('[data-f="lote"]').value.trim(),
+          fecha_vto: div.querySelector('[data-f="fecha_vto"]').value,
+          buen_estado: Number(be.value) || 0,
+          averias: Number(av.value) || 0,
+          total_recibo: Number(totalInp.value) || 0,
           usuario: usuarioActual
         };
+
+        const btn = div.querySelector("button");
+        btn.disabled = true;
+        btn.textContent = "Guardando...";
 
         const res = await fetch(WEBAPP_URL, {
           method: "POST",
@@ -97,7 +113,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const text = await res.text();
-        alert(text.includes("OK_UPDATE") ? "Registro actualizado" : text);
+        alert(text.includes("OK_UPDATE")
+          ? "Registro actualizado correctamente"
+          : text);
+
+        btn.disabled = false;
+        btn.textContent = "Guardar cambios";
       });
 
       results.appendChild(div);
