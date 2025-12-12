@@ -1,222 +1,106 @@
 // auditoria.js
 if (!localStorage.getItem("usuario")) {
-    window.location.href = "index.html";
+  window.location.href = "index.html";
 }
 const usuarioActual = localStorage.getItem("usuario");
 
-// URL del WebApp
 const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    const facturaInput = document.getElementById("factura");
-    const codigoInput = document.getElementById("codigo");
-    const btnBuscar = document.getElementById("btnBuscar");
-    const results = document.getElementById("results");
+  const facturaInput = document.getElementById("factura");
+  const codigoInput = document.getElementById("codigo");
+  const btnBuscar = document.getElementById("btnBuscar");
+  const results = document.getElementById("results");
 
-    // 🔙 Botón volver
-    crearBotonVolver();
+  btnBuscar.addEventListener("click", buscar);
 
-    btnBuscar.addEventListener("click", buscar);
+  async function buscar() {
+    const factura = facturaInput.value.trim();
+    const codigo = codigoInput.value.trim();
 
-    // =========================
-    // BUSCAR
-    // =========================
-    async function buscar() {
-        const factura = facturaInput.value.trim();
-        const codigo = codigoInput.value.trim();
-
-        if (!factura) {
-            alert("Ingrese número de factura para buscar.");
-            return;
-        }
-
-        results.innerHTML = "<p class='small'>Buscando...</p>";
-
-        try {
-            const url = new URL(WEBAPP_URL);
-            url.searchParams.set("action", "get");
-            url.searchParams.set("factura", factura);
-            if (codigo) url.searchParams.set("codigo", codigo);
-
-            const res = await fetch(url.toString(), { method: "GET" });
-            const data = await res.json();
-
-            if (data.error) {
-                results.innerHTML = `<div class="small">Error: ${data.error}</div>`;
-                return;
-            }
-
-            renderTable(data.rows || []);
-
-        } catch (err) {
-            results.innerHTML = `<div class="small">Error de conexión: ${err}</div>`;
-        }
+    if (!factura) {
+      alert("Ingrese número de factura");
+      return;
     }
 
-    // =========================
-    // RENDER TABLA
-    // =========================
-    function renderTable(rows) {
-        if (!rows.length) {
-            results.innerHTML = "<div class='small'>No se encontraron registros.</div>";
-            return;
-        }
+    results.innerHTML = "<p>Buscando...</p>";
 
-        let html = `<table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Factura</th>
-                    <th>Código</th>
-                    <th>Lote</th>
-                    <th>Fecha Vto</th>
-                    <th>Buen Estado</th>
-                    <th>Averías</th>
-                    <th>Total</th>
-                    <th>Usuario</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>`;
+    const url = new URL(WEBAPP_URL);
+    url.searchParams.set("action", "get");
+    url.searchParams.set("factura", factura);
+    if (codigo) url.searchParams.set("codigo", codigo);
 
-        rows.forEach(r => {
-            const rowNum = r.rowNumber;
-            const fechaVto = (r.fecha_vto || "").substring(0, 10); // fecha limpia
+    const res = await fetch(url.toString());
+    const data = await res.json();
 
-            html += `<tr data-row="${rowNum}">
-                <td>${rowNum}</td>
-                <td>${escapeHtml(r.factura)}</td>
-
-                <td><input data-field="codigo" value="${escapeAttr(r.codigo)}" /></td>
-                <td><input data-field="lote" value="${escapeAttr(r.lote)}" /></td>
-
-                <td>
-                    <input data-field="fecha_vto" type="date" value="${escapeAttr(fechaVto)}" />
-                </td>
-
-                <td><input data-field="buen_estado" type="number" min="0" value="${r.buen_estado}" /></td>
-                <td><input data-field="averias" type="number" min="0" value="${r.averias}" /></td>
-
-                <td>
-                    <input data-field="total" 
-                           type="number" 
-                           value="${Number(r.buen_estado) + Number(r.averias)}"
-                           disabled
-                           style="background:#eee;" />
-                </td>
-
-                <td>${escapeHtml(r.usuario || "")}</td>
-
-                <td><button class="saveBtn" data-row="${rowNum}">Guardar</button></td>
-            </tr>`;
-        });
-
-        html += `</tbody></table>`;
-        results.innerHTML = html;
-
-        // recalcular total automáticamente
-        document.querySelectorAll(
-            "input[data-field='buen_estado'], input[data-field='averias']"
-        ).forEach(input => input.addEventListener("input", recalcularTotal));
-
-        // botones guardar
-        document.querySelectorAll(".saveBtn").forEach(btn => {
-            btn.addEventListener("click", guardarFila);
-        });
+    if (!data.rows || !data.rows.length) {
+      results.innerHTML = "<p>No se encontraron registros.</p>";
+      return;
     }
 
-    // =========================
-    // RECALCULAR TOTAL
-    // =========================
-    function recalcularTotal(e) {
-        const tr = e.target.closest("tr");
-        const buen = Number(tr.querySelector("[data-field='buen_estado']").value) || 0;
-        const ave = Number(tr.querySelector("[data-field='averias']").value) || 0;
-        tr.querySelector("[data-field='total']").value = buen + ave;
-    }
+    renderCards(data.rows);
+  }
 
-    // =========================
-    // GUARDAR FILA
-    // =========================
-    async function guardarFila(e) {
-        const btn = e.currentTarget;
-        const row = Number(btn.dataset.row);
-        const tr = btn.closest("tr");
+  function renderCards(rows) {
+    results.innerHTML = "";
 
-        const codigo = tr.querySelector("[data-field='codigo']").value.trim();
-        const lote = tr.querySelector("[data-field='lote']").value.trim();
-        const fecha_vto = tr.querySelector("[data-field='fecha_vto']").value.trim();
-        const buen_estado = Number(tr.querySelector("[data-field='buen_estado']").value) || 0;
-        const averias = Number(tr.querySelector("[data-field='averias']").value) || 0;
-        const total = buen_estado + averias;
+    rows.forEach(r => {
+      const div = document.createElement("div");
+      div.className = "result-card";
 
-        if (!codigo || !lote || !fecha_vto) {
-            alert("Complete código, lote y fecha.");
-            return;
-        }
+      div.innerHTML = `
+        <label>Código</label>
+        <input value="${r.codigo}" data-f="codigo">
 
-        // validar fecha
-        const fechaV = new Date(fecha_vto);
-        const min = new Date();
-        min.setMonth(min.getMonth() + 3);
+        <label>Lote</label>
+        <input value="${r.lote}" data-f="lote">
 
-        if (fechaV < min) {
-            alert("La fecha de vencimiento debe ser mínimo 3 meses mayor a hoy.");
-            return;
-        }
+        <label>Fecha vencimiento</label>
+        <input type="date" value="${r.fecha_vto}" data-f="fecha_vto">
 
+        <label>Buen estado</label>
+        <input type="number" value="${r.buen_estado}" data-f="buen">
+
+        <label>Averías</label>
+        <input type="number" value="${r.averias}" data-f="averias">
+
+        <label>Total recibido</label>
+        <input class="total" value="${Number(r.buen_estado) + Number(r.averias)}" disabled>
+
+        <button>Guardar cambios</button>
+      `;
+
+      const inputs = div.querySelectorAll("input[data-f='buen'], input[data-f='averias']");
+      inputs.forEach(i => i.addEventListener("input", () => {
+        const b = Number(div.querySelector("[data-f='buen']").value) || 0;
+        const a = Number(div.querySelector("[data-f='averias']").value) || 0;
+        div.querySelector(".total").value = b + a;
+      }));
+
+      div.querySelector("button").addEventListener("click", async () => {
         const payload = {
-            tipo: "update",
-            row,
-            codigo,     // texto
-            lote,       // texto
-            fecha_vto,
-            buen_estado,
-            averias,
-            total,
-            usuario: usuarioActual
+          tipo: "update",
+          row: r.rowNumber,
+          codigo: div.querySelector("[data-f='codigo']").value.trim(),
+          lote: div.querySelector("[data-f='lote']").value.trim(),
+          fecha_vto: div.querySelector("[data-f='fecha_vto']").value,
+          buen_estado: Number(div.querySelector("[data-f='buen']").value) || 0,
+          averias: Number(div.querySelector("[data-f='averias']").value) || 0,
+          total: Number(div.querySelector(".total").value),
+          usuario: usuarioActual
         };
 
-        btn.disabled = true;
-        const old = btn.textContent;
-        btn.textContent = "Guardando...";
+        const res = await fetch(WEBAPP_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
 
-        try {
-            const res = await fetch(WEBAPP_URL, {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
-            const text = await res.text();
+        const text = await res.text();
+        alert(text.includes("OK_UPDATE") ? "Registro actualizado" : text);
+      });
 
-            if (text.includes("OK_UPDATE")) {
-                alert("Registro actualizado correctamente.");
-            } else {
-                alert("Error al guardar: " + text);
-            }
-        } catch (err) {
-            alert("Error de conexión: " + err);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = old;
-        }
-    
-    
-    }
-
-    // =========================
-    // HELPERS
-    // =========================
-    function escapeHtml(s) {
-        return String(s || "").replace(/[&<>"]/g, c => ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            "\"": "&quot;"
-        })[c]);
-    }
-
-    function escapeAttr(s) {
-        return escapeHtml(s || "");
-    }
+      results.appendChild(div);
+    });
+  }
 });
