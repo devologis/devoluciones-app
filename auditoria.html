@@ -6,149 +6,94 @@
   <title>Auditoría de Registros</title>
 
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      background:#f7f7f7; 
-      margin:0; 
-      padding:18px; 
+    body {
+      font-family: Arial, sans-serif;
+      background:#f2f2f2;
+      margin:0;
+      padding:14px;
     }
 
-    .card { 
-      max-width:980px; 
-      margin:0 auto; 
-      background:white; 
-      padding:18px; 
-      border-radius:8px; 
-      box-shadow:0 4px 12px rgba(0,0,0,0.06); 
+    .card {
+      max-width:520px;
+      margin:0 auto;
+      background:#fff;
+      padding:16px;
+      border-radius:10px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.08);
     }
 
-    h1 { 
-      text-align:center; 
-      margin:6px 0 18px; 
-      font-size:26px; 
+    h1 {
+      text-align:center;
+      margin:0 0 14px;
+      font-size:22px;
     }
 
-    /* ← Corregido: filas flexibles y autoajuste sin encimarse */
-    .row { 
-      display:flex; 
-      gap:12px; 
-      flex-wrap:wrap; 
-      align-items:flex-end; 
+    label {
+      font-weight:600;
+      margin-top:10px;
+      display:block;
     }
 
-    .col { 
-      flex:1 1 260px; 
-      min-width:200px; 
-    }
-
-    label { 
-      display:block; 
-      margin-bottom:6px; 
-      font-weight:600; 
-    }
-
-    input { 
-      width:100%; 
-      padding:10px; 
-      border-radius:6px; 
-      border:1px solid #ccc; 
-      font-size:15px; 
+    input {
+      width:100%;
+      padding:12px;
+      font-size:18px;
+      border-radius:6px;
+      border:1px solid #ccc;
       box-sizing:border-box;
     }
 
-    button { 
-      padding:11px 16px; 
-      border-radius:6px; 
-      border:none; 
-      background:#1976d2; 
-      color:white; 
+    button {
+      width:100%;
+      padding:14px;
+      margin-top:14px;
+      font-size:18px;
+      font-weight:bold;
+      border:none;
+      border-radius:8px;
+      background:#1976d2;
+      color:#fff;
       cursor:pointer;
-      font-size:15px;
-      font-weight:600;
-      white-space:nowrap;
     }
 
-    #results { 
-      margin-top:18px; 
-      overflow-x:auto; 
+    .btn-back {
+      background:#444;
+      margin-bottom:12px;
     }
 
-    table { 
-      width:100%; 
-      border-collapse:collapse; 
-      font-size:14px; 
+    .result-card {
+      margin-top:18px;
+      padding:14px;
+      border-radius:10px;
+      background:#fafafa;
+      box-shadow:0 2px 6px rgba(0,0,0,0.08);
     }
 
-    th, td { 
-      padding:8px; 
-      border-bottom:1px solid #eee; 
-      text-align:left; 
-      vertical-align:middle; 
-    }
-
-    th { 
-      background:#fafafa; 
-      font-weight:700; 
-    }
-
-    .saveBtn { 
-      background:#2e7d32; 
-      color:white; 
-      padding:6px 10px; 
-      border-radius:6px; 
-      cursor:pointer; 
-      border:none; 
-    }
-
-    .small { font-size:13px; color:#666; }
-    .hint { margin-top:8px; color:#666; font-size:13px; }
-
-    /* Botón volver */
-    #btnVolver {
-      background:#555;
-      padding:8px 14px;
-      margin-bottom:10px;
+    .total {
+      background:#eee;
     }
   </style>
 </head>
-<body>
 
+<body>
   <div class="card">
 
-    <!-- 🔙 BOTÓN VOLVER -->
-    <button id="btnVolver">⬅ Volver</button>
+    <button class="btn-back" onclick="location.href='dashboard.html'">⬅ Volver</button>
 
-    <h1>Auditoría de Registros</h1>
+    <h1>Auditoría</h1>
 
-    <div class="row" style="margin-bottom:12px;">
-      
-      <div class="col">
-        <label for="factura">Número de factura</label>
-        <input id="factura" />
-      </div>
+    <label>Número de factura</label>
+    <input id="factura" />
 
-      <div class="col">
-        <label for="codigo">Código (opcional - filtrar)</label>
-        <input id="codigo" />
-      </div>
+    <label>Código (opcional)</label>
+    <input id="codigo" />
 
-      <div style="flex:0 0 auto;">
-        <button id="btnBuscar">Buscar</button>
-      </div>
-
-    </div>
+    <button id="btnBuscar">Buscar</button>
 
     <div id="results"></div>
+
   </div>
 
   <script type="module" src="js/auditoria.js"></script>
-
-  <script>
-    // Acción del botón volver
-    document.getElementById("btnVolver").onclick = () => {
-      window.location.href = "dashboard.html";
-    };
-  </script>
-
 </body>
 </html>
