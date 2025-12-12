@@ -1,125 +1,176 @@
 // auditoria.js
-// Permite a usuarios con rol "auditor" buscar y corregir registros
+if (!localStorage.getItem("usuario")) {
+    window.location.href = "index.html";
+}
+const usuarioActual = localStorage.getItem("usuario");
 
-import {
-    db,
-    auth,
-    signOut,
-    collection,
-    query,
-    where,
-    getDocs,
-    doc,
-    updateDoc
-} from "./firebase.js";
+// Pon aquí tu URL del WebApp (la que nos diste ya)
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
 
-// =============================
-// BLOQUEAR SI NO ES AUDITOR
-// =============================
-auth.onAuthStateChanged(async user => {
-    if (!user) {
-        window.location.href = "login.html";
-        return;
+document.addEventListener("DOMContentLoaded", () => {
+    const facturaInput = document.getElementById("factura");
+    const codigoInput = document.getElementById("codigo");
+    const btnBuscar = document.getElementById("btnBuscar");
+    const results = document.getElementById("results");
+
+    btnBuscar.addEventListener("click", buscar);
+
+    async function buscar() {
+        const factura = facturaInput.value.trim();
+        const codigo = codigoInput.value.trim();
+
+        if (!factura) {
+            alert("Ingrese número de factura para buscar.");
+            return;
+        }
+
+        results.innerHTML = "<p class='small'>Buscando...</p>";
+
+        try {
+            const url = new URL(WEBAPP_URL);
+            url.searchParams.set("action", "get");
+            url.searchParams.set("factura", factura);
+            if (codigo) url.searchParams.set("codigo", codigo);
+
+            const res = await fetch(url.toString(), { method: "GET" });
+            const data = await res.json();
+
+            if (data.error) {
+                results.innerHTML = `<div class="small">Error: ${data.error}</div>`;
+                return;
+            }
+
+            renderTable(data.rows || []);
+        } catch (err) {
+            results.innerHTML = `<div class="small">Error de conexión: ${err}</div>`;
+        }
     }
 
-    const q = query(collection(db, "usuarios"), where("uid", "==", user.uid));
-    const snap = await getDocs(q);
+    function renderTable(rows) {
+        if (!rows.length) {
+            results.innerHTML = "<div class='small'>No se encontraron registros.</div>";
+            return;
+        }
 
-    if (snap.empty) {
-        alert("Usuario sin datos válidos.");
-        window.location.href = "login.html";
-        return;
+        let html = `<table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Factura</th>
+                    <th>Código</th>
+                    <th>Lote</th>
+                    <th>Fecha Vto</th>
+                    <th>Buen Estado</th>
+                    <th>Averías</th>
+                    <th>Total</th>
+                    <th>Usuario</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        rows.forEach(r => {
+            const rowNum = r.rowNumber;
+            html += `<tr data-row="${rowNum}">
+                <td>${rowNum}</td>
+                <td>${escapeHtml(r.factura)}</td>
+                <td><input data-field="codigo" value="${escapeAttr(r.codigo)}" /></td>
+                <td><input data-field="lote" value="${escapeAttr(r.lote)}" /></td>
+                <td><input data-field="fecha_vto" value="${escapeAttr(r.fecha_vto)}" placeholder="YYYY-MM-DD" /></td>
+                <td><input data-field="buen_estado" type="number" value="${escapeAttr(r.buen_estado)}" /></td>
+                <td><input data-field="averias" type="number" value="${escapeAttr(r.averias)}" /></td>
+                <td><input data-field="total" type="number" value="${escapeAttr(r.total)}" /></td>
+                <td>${escapeHtml(r.usuario || "")}</td>
+                <td><button class="saveBtn" data-row="${rowNum}">Guardar</button></td>
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+        results.innerHTML = html;
+
+        // attach save handlers
+        document.querySelectorAll(".saveBtn").forEach(btn => {
+            btn.addEventListener("click", onSaveRow);
+        });
     }
 
-    const userData = snap.docs[0].data();
+    // guarda fila editada
+    async function onSaveRow(e) {
+        const row = Number(e.currentTarget.dataset.row);
+        const tr = document.querySelector(`tr[data-row="${row}"]`);
+        if (!tr) return alert("Fila no encontrada.");
 
-    if (!userData.auditor) {
-        alert("Acceso restringido: solo para AUDITORES.");
-        window.location.href = "dashboard.html";
-        return;
-    }
-});
+        const codigo = tr.querySelector('input[data-field="codigo"]').value.trim();
+        const lote = tr.querySelector('input[data-field="lote"]').value.trim();
+        let fecha_vto = tr.querySelector('input[data-field="fecha_vto"]').value.trim();
+        const buen_estado = Number(tr.querySelector('input[data-field="buen_estado"]').value) || 0;
+        const averias = Number(tr.querySelector('input[data-field="averias"]').value) || 0;
+        const total = Number(tr.querySelector('input[data-field="total"]').value) || (buen_estado + averias);
 
-// =============================
-// REFERENCIAS A ELEMENTOS
-// =============================
-const facturaInput = document.getElementById("factura");
-const codigoInput = document.getElementById("codigo");
+        // validaciones: campos obligatorios
+        if (!codigo || !lote || !fecha_vto) {
+            alert("Completa código, lote y fecha de vencimiento (YYYY-MM-DD).");
+            return;
+        }
 
-const cantBuena = document.getElementById("cantBuena");
-const cantAveriada = document.getElementById("cantAveriada");
+        // validar formato de fecha (aceptamos YYYY-MM-DD)
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha_vto)) {
+            alert("Fecha inválida. Debe estar en formato YYYY-MM-DD.");
+            return;
+        }
 
-const btnBuscar = document.getElementById("btnBuscar");
-const btnGuardar = document.getElementById("btnGuardar");
+        // Validación vencimiento mínimo 3 meses desde hoy
+        const fechaV = new Date(fecha_vto);
+        const hoy = new Date();
+        const minimo = new Date(hoy.getFullYear(), hoy.getMonth() + 3, hoy.getDate());
+        if (fechaV < minimo) {
+            alert("La fecha de vencimiento debe ser al menos 3 meses superior a la fecha actual.");
+            return;
+        }
 
-const resultadoDiv = document.getElementById("resultado");
+        // payload update
+        const payload = {
+            tipo: "update",
+            row: row,
+            codigo,
+            lote,
+            fecha_vto,
+            buen_estado,
+            averias,
+            total,
+            usuario: usuarioActual
+        };
 
-let documentoId = null;
+        // bloquear botón y dar feedback
+        e.currentTarget.disabled = true;
+        const oldText = e.currentTarget.innerText;
+        e.currentTarget.innerText = "Guardando...";
 
-// =============================
-// BUSCAR REGISTRO
-// =============================
-btnBuscar.addEventListener("click", async () => {
-    const factura = facturaInput.value.trim();
-    const codigo = codigoInput.value.trim();
-
-    if (!factura || !codigo) {
-        alert("Ingrese número de factura y código.");
-        return;
-    }
-
-    const col = collection(db, "devoluciones");
-    const q = query(
-        col,
-        where("factura", "==", factura),
-        where("codigo", "==", codigo)
-    );
-
-    const snap = await getDocs(q);
-
-    if (snap.empty) {
-        alert("No se encontró registro con esos datos.");
-        resultadoDiv.style.display = "none";
-        return;
-    }
-
-    const docSnap = snap.docs[0];
-    const data = docSnap.data();
-
-    documentoId = docSnap.id;
-
-    // Mostrar datos
-    cantBuena.value = data.cant_buen;
-    cantAveriada.value = data.averias;
-
-    resultadoDiv.style.display = "block";
-});
-
-// =============================
-// GUARDAR CAMBIOS
-// =============================
-btnGuardar.addEventListener("click", async () => {
-    if (!documentoId) {
-        alert("Primero busque un registro.");
-        return;
+        try {
+            const res = await fetch(WEBAPP_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            const texto = await res.text();
+            if (texto && texto.indexOf("OK_UPDATE") !== -1) {
+                alert("Registro actualizado correctamente.");
+            } else {
+                alert("Error actualizando: " + texto);
+            }
+        } catch (err) {
+            alert("Error de conexión: " + err);
+        } finally {
+            e.currentTarget.disabled = false;
+            e.currentTarget.innerText = oldText;
+        }
     }
 
-    const nuevaBuena = Number(cantBuena.value);
-    const nuevaAveriada = Number(cantAveriada.value);
-
-    if (nuevaBuena < 0 || nuevaAveriada < 0) {
-        alert("Las cantidades no pueden ser negativas.");
-        return;
+    // small helpers
+    function escapeHtml(s) {
+        if (s === null || typeof s === "undefined") return "";
+        return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
     }
-
-    const ref = doc(db, "devoluciones", documentoId);
-
-    await updateDoc(ref, {
-        cant_buen: nuevaBuena,
-        averias: nuevaAveriada,
-        total: nuevaBuena + nuevaAveriada,
-        modificado_por_auditor: new Date()
-    });
-
-    alert("Registro actualizado correctamente.");
+    function escapeAttr(s) {
+        return escapeHtml(s).replace(/"/g, "&quot;");
+    }
 });
