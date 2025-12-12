@@ -6,10 +6,17 @@
     <title>Registro de Devoluciones</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
             background: #f2f2f2;
             padding: 15px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
         }
 
         h2 { 
@@ -22,8 +29,8 @@
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 0 5px rgba(0,0,0,0.2);
-            max-width: 900px;
-            margin: auto;
+            width: 100%;
+            max-width: 460px; /* PERFECTO PARA PDA, CELULAR Y WEB */
         }
 
         label { 
@@ -35,11 +42,11 @@
 
         input {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             font-size: 18px;
             margin-top: 3px;
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 6px;
             outline: none;
         }
 
@@ -47,39 +54,35 @@
             border-color: #90caf9;
         }
 
-        /* OCULTAR FLECHAS DE INPUT NUMBER */
+        /* Ocultar flechas en number */
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
+        input[type=number] { -moz-appearance: textfield; }
 
         .botones {
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 25px;
         }
 
         button {
-            flex: 1;
-            padding: 12px;
+            padding: 14px;
             font-size: 18px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            background: #e0e0e0;
+            color: white;
         }
 
-        #btn_finalizar { background: #90caf9; }
-        #btn_cerrar { background: #ffb3b3; }
+        #btn_siguiente { background: #4ea3ff; }
+        #btn_finalizar { background: #66cc99; }
+        #btn_cerrar { background: #ff6b6b; }
 
-        /* ==========================================================
-           LOADER – BLOQUEA LA PANTALLA Y EVITA CLICS REPETIDOS
-        ========================================================== */
+        /* LOADER */
         #loaderOverlay {
             display: none;
             position: fixed;
@@ -107,13 +110,13 @@
         .spinner {
             width: 28px;
             height: 28px;
-            border: 4px solid #90caf9;
+            border: 4px solid #4ea3ff;
             border-top: 4px solid transparent;
             border-radius: 50%;
             animation: spin 0.9s linear infinite;
         }
 
-        @keyframes spin {
+        @keyframes spin { 
             100% { transform: rotate(360deg); }
         }
     </style>
