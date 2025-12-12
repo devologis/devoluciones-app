@@ -10,12 +10,13 @@ const usuarioActual = localStorage.getItem("usuario");
 // ===============================
 // URL DEL WEBAPP GOOGLE APPS SCRIPT
 // ===============================
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
+const WEBAPP_URL =
+    "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
 
     // ===============================
-    // CAMPOS (ID’s reales del HTML)
+    // CAMPOS
     // ===============================
     const facturaInput = document.getElementById("factura");
     const codigoInput = document.getElementById("codigo");
@@ -26,15 +27,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalInput = document.getElementById("total");
 
     // ===============================
-    // VALIDACIÓN DE FECHA MM-AAAA
+    // VALIDACIÓN FECHA MM/AAAA
     // ===============================
     vencInput.addEventListener("blur", () => {
-        let valor = vencInput.value.trim(); // Ej: 02-2026
+        let valor = vencInput.value.trim();  // Ejemplo: 02/2026
 
-        const regex = /^([0-1][0-9])[-/]([0-9]{4})$/;
+        // Permite MM/AAAA o MM-AAAA
+        const regex = /^([0][1-9]|1[0-2])[-/]([0-9]{4})$/;
 
         if (!regex.test(valor)) {
-            alert("Formato inválido. Use MM-AAAA");
+            alert("Formato inválido. Use MM/AAAA");
             vencInput.value = "";
             return;
         }
@@ -42,15 +44,18 @@ document.addEventListener("DOMContentLoaded", () => {
         // Extraer mes y año
         let [mes, año] = valor.split(/[-/]/).map(Number);
 
-        // Último día del mes
-        const ultimoDia = new Date(año, mes, 0).getDate(); // día 0 siguiente mes = último día
+        // ===============================
+        // OBTENER ÚLTIMO DÍA DEL MES
+        // ===============================
+        const ultimoDia = new Date(año, mes, 0).getDate();
 
-        // Construir fecha final YYYY-MM-DD
-        const fechaCompleta = `${año}-${String(mes).padStart(2, '0')}-${ultimoDia}`;
-
+        // Construir fecha final en formato completo
+        const fechaCompleta = `${año}-${String(mes).padStart(2, "0")}-${ultimoDia}`;
         const fechaVenc = new Date(fechaCompleta);
 
-        // Validar que falten mínimo 3 meses
+        // ===============================
+        // VALIDAR QUE FALTEN AL MENOS 3 MESES
+        // ===============================
         const hoy = new Date();
         const fechaMinima = new Date(hoy.getFullYear(), hoy.getMonth() + 3, hoy.getDate());
 
@@ -60,12 +65,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Guardar fecha válida completa
+        // Guardar fecha corregida YYYY-MM-DD
         vencInput.value = fechaCompleta;
     });
 
     // ===============================
-    // ENTER PASA AL SIGUIENTE CAMPO
+    // ENTER PASA AL SIGUIENTE INPUT
     // ===============================
     const inputs = document.querySelectorAll("input");
 
@@ -74,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (e.key === "Enter") {
                 e.preventDefault();
 
-                // Recalcular total
+                // Actualizar total si corresponde
                 if (input === buenInput || input === averiasInput) {
                     actualizarTotal();
                 }
@@ -85,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ===============================
-    // SUMA AUTOMÁTICA
+    // CALCULAR TOTAL
     // ===============================
     function actualizarTotal() {
         let b = parseInt(buenInput.value) || 0;
@@ -97,17 +102,15 @@ document.addEventListener("DOMContentLoaded", () => {
     averiasInput.addEventListener("input", actualizarTotal);
 
     // ===============================
-    // GUARDAR UN CÓDIGO
+    // GUARDAR CÓDIGO
     // ===============================
     async function guardarCodigo() {
-
         let factura = facturaInput.value.trim();
         let codigo = codigoInput.value.trim();
         let lote = loteInput.value.trim();
         let fecha_vto = vencInput.value.trim();
         let cant_buen = Number(buenInput.value);
         let averias = Number(averiasInput.value);
-        let total = cant_buen + averias;
 
         if (!factura || !codigo || !lote || !fecha_vto) {
             alert("Complete todos los campos obligatorios.");
@@ -122,30 +125,29 @@ document.addEventListener("DOMContentLoaded", () => {
             fecha_vto,
             buen_estado: cant_buen,
             averias,
-            total,
+            total: cant_buen + averias,
             usuario: usuarioActual
         };
 
-        const res = await fetch(WEBAPP_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-        });
+        try {
+            const res = await fetch(WEBAPP_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
 
-        const texto = await res.text();
+            const texto = await res.text();
 
-        if (texto.includes("OK_CODIGO")) {
-            return true;
-        } else {
-            alert("Error al guardar: " + texto);
+            return texto.includes("OK_CODIGO");
+        } catch (err) {
+            alert("Error de conexión.");
             return false;
         }
     }
 
     // ===============================
-    // SIGUIENTE CÓDIGO
+    // BOTÓN SIGUIENTE CÓDIGO
     // ===============================
     document.getElementById("btn_siguiente").addEventListener("click", async () => {
-
         let ok = await guardarCodigo();
         if (!ok) return;
 
@@ -167,7 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // FINALIZAR FACTURA
     // ===============================
     document.getElementById("btn_finalizar").addEventListener("click", async () => {
-
         let ok = await guardarCodigo();
         if (!ok) return;
 
@@ -198,7 +199,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         alert("Factura finalizada correctamente.");
-
         document.getElementById("formDev").reset();
         facturaInput.removeAttribute("readonly");
     });
@@ -210,5 +210,4 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.clear();
         window.location.href = "index.html";
     });
-
 });
