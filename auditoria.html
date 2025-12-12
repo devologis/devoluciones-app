@@ -102,11 +102,22 @@
 
     .small { font-size:13px; color:#666; }
     .hint { margin-top:8px; color:#666; font-size:13px; }
+
+    /* Botón volver */
+    #btnVolver {
+      background:#555;
+      padding:8px 14px;
+      margin-bottom:10px;
+    }
   </style>
 </head>
 <body>
 
   <div class="card">
+
+    <!-- 🔙 BOTÓN VOLVER -->
+    <button id="btnVolver">⬅ Volver</button>
+
     <h1>Auditoría de Registros</h1>
 
     <div class="row" style="margin-bottom:12px;">
@@ -131,5 +142,13 @@
   </div>
 
   <script type="module" src="js/auditoria.js"></script>
+
+  <script>
+    // Acción del botón volver
+    document.getElementById("btnVolver").onclick = () => {
+      window.location.href = "dashboard.html";
+    };
+  </script>
+
 </body>
 </html>
