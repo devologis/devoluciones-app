@@ -222,3 +222,4 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelector(".card").prepend(btn);
     }
 });
+
