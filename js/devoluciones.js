@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const fechaMinima = new Date(hoy.getFullYear(), hoy.getMonth() + 3, hoy.getDate());
 
         if (fechaVenc < fechaMinima) {
-            alert("La fecha de vencimiento debe ser al menos 3 meses posterior.");
+            alert("La fecha de vencimiento debe ser al menos 3 meses superior.");
             vencInput.value = "";
             return;
         }
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===============================
-    // SIGUIENTE CÓDIGO (con bloqueo + factura NO se borra)
+    // SIGUIENTE CÓDIGO (con bloqueo)
     // ===============================
     btnSiguiente.addEventListener("click", async () => {
 
@@ -161,10 +161,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         alert("Código guardado. Ingrese el siguiente.");
 
-        // Mantener factura pero bloquearla
         facturaInput.setAttribute("readonly", true);
 
-        // Limpiar SOLO los campos del código
         codigoInput.value = "";
         loteInput.value = "";
         vencInput.value = "";
@@ -179,14 +177,27 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ===============================
-    // FINALIZAR FACTURA (limpia todo)
+    // FINALIZAR FACTURA (permite finalizar sin más códigos)
     // ===============================
     btnFinalizar.addEventListener("click", async () => {
 
         btnFinalizar.disabled = true;
         btnFinalizar.innerText = "Guardando...";
 
-        let ok = await guardarCodigo();
+        // Detectar si hay datos de un código pendientes
+        const hayDatosPendientes =
+            codigoInput.value.trim() ||
+            loteInput.value.trim() ||
+            vencInput.value.trim() ||
+            buenInput.value.trim() ||
+            averiasInput.value.trim();
+
+        let ok = true;
+
+        // Si hay datos → intenta guardar ese último código
+        if (hayDatosPendientes) {
+            ok = await guardarCodigo();
+        }
 
         if (!ok) {
             btnFinalizar.disabled = false;
