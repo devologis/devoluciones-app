@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnBuscar = document.getElementById("btnBuscar");
     const results = document.getElementById("results");
 
+    // 🔙 botón volver
+    addBackButton();
+
     btnBuscar.addEventListener("click", buscar);
 
     async function buscar() {
@@ -27,56 +30,39 @@ document.addEventListener("DOMContentLoaded", () => {
         results.innerHTML = "<p class='small'>Buscando...</p>";
 
         try {
-            // Construir URL con action=get para compatibilidad
             const url = new URL(WEBAPP_URL);
-            url.searchParams.set("action", "get");    // <- importante si tu doGet lo exige
+            url.searchParams.set("action", "get");
             url.searchParams.set("factura", factura);
             if (codigo) url.searchParams.set("codigo", codigo);
 
-            console.log("Auditoría: llamando a URL:", url.toString());
-
             const res = await fetch(url.toString(), { method: "GET" });
             const text = await res.text();
-            console.log("Auditoría: respuesta cruda:", text);
 
-            // Intentar parsear JSON robustamente
             let data;
             try {
                 data = JSON.parse(text);
-            } catch (err) {
-                // si no es JSON, mostrar error
-                results.innerHTML = `<div class="small">Respuesta inválida del servidor (no JSON): ${escapeHtml(text)}</div>`;
-                console.error("No JSON:", err);
+            } catch {
+                results.innerHTML = `<div class="small">Respuesta no válida del servidor: ${escapeHtml(text)}</div>`;
                 return;
             }
 
-            // 3 formatos comunes que podrías recibir:
-            // 1) un array directo: [ {row:..., factura:..., ...}, ... ]
-            // 2) un objeto { ok:true, rows:[ ... ] }
-            // 3) un objeto { error: "..." }
             let rows = [];
-            if (Array.isArray(data)) {
-                rows = data;
-            } else if (data && Array.isArray(data.rows)) {
-                rows = data.rows;
-            } else if (data && data.error) {
-                results.innerHTML = `<div class="small">Error del servidor: ${escapeHtml(data.error)}</div>`;
-                return;
-            } else {
-                // no tuvimos nada reconocible
-                results.innerHTML = `<div class="small">Respuesta inesperada del servidor: ${escapeHtml(JSON.stringify(data))}</div>`;
+            if (Array.isArray(data)) rows = data;
+            else if (data.rows) rows = data.rows;
+            else if (data.error) {
+                results.innerHTML = `<div class="small">Error: ${escapeHtml(data.error)}</div>`;
                 return;
             }
 
             renderTable(rows);
+
         } catch (err) {
             results.innerHTML = `<div class="small">Error de conexión: ${escapeHtml(String(err))}</div>`;
-            console.error(err);
         }
     }
 
     function renderTable(rows) {
-        if (!rows || !rows.length) {
+        if (!rows.length) {
             results.innerHTML = "<div class='small'>No se encontraron registros.</div>";
             return;
         }
@@ -91,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <th>Fecha Vto</th>
                     <th>Buen Estado</th>
                     <th>Averías</th>
-                    <th>Total Recibo</th>
+                    <th>Total (AUTO)</th>
                     <th>Usuario</th>
                     <th></th>
                 </tr>
@@ -99,19 +85,27 @@ document.addEventListener("DOMContentLoaded", () => {
             <tbody>`;
 
         rows.forEach(r => {
-            // compatibilidad: algunos scripts usan "row" o "rowNumber"
-            const rowIndex = r.row || r.rowNumber || r.rowIndex;
+            const rowIndex = r.row || r.rowNumber;
+
             html += `
             <tr data-row="${rowIndex}">
                 <td>${rowIndex}</td>
                 <td>${escapeHtml(r.factura)}</td>
+
                 <td><input data-field="codigo" value="${escapeAttr(r.codigo)}"></td>
+
                 <td><input data-field="lote" value="${escapeAttr(r.lote)}"></td>
+
                 <td><input data-field="fecha_vto" value="${escapeAttr(r.fecha_vto)}" placeholder="YYYY-MM-DD"></td>
+
                 <td><input data-field="buen_estado" type="number" value="${escapeAttr(r.buen_estado)}"></td>
+
                 <td><input data-field="averias" type="number" value="${escapeAttr(r.averias)}"></td>
-                <td><input data-field="total_recibo" type="number" value="${escapeAttr(r.total_recibo || r.total)}"></td>
+
+                <td><input data-field="total" type="number" value="${escapeAttr(r.total)}" disabled></td>
+
                 <td>${escapeHtml(r.usuario)}</td>
+
                 <td><button class="saveBtn" data-row="${rowIndex}">Guardar</button></td>
             </tr>`;
         });
@@ -119,25 +113,40 @@ document.addEventListener("DOMContentLoaded", () => {
         html += `</tbody></table>`;
         results.innerHTML = html;
 
+        // recalcular total cuando cambie buen_estado o averias
+        document.querySelectorAll('input[data-field="buen_estado"], input[data-field="averias"]').forEach(inp => {
+            inp.addEventListener("input", recalcTotals);
+        });
+
+        // botones guardar
         document.querySelectorAll(".saveBtn").forEach(btn => {
             btn.addEventListener("click", onSaveRow);
         });
     }
 
+    function recalcTotals() {
+        const tr = this.closest("tr");
+        if (!tr) return;
+
+        const be = Number(tr.querySelector('input[data-field="buen_estado"]').value) || 0;
+        const av = Number(tr.querySelector('input[data-field="averias"]').value) || 0;
+
+        tr.querySelector('input[data-field="total"]').value = be + av;
+    }
+
     async function onSaveRow(e) {
         const row = Number(e.currentTarget.dataset.row);
         const tr = document.querySelector(`tr[data-row="${row}"]`);
-        if (!tr) return alert("Fila no encontrada.");
 
         const codigo = tr.querySelector('input[data-field="codigo"]').value.trim();
         const lote = tr.querySelector('input[data-field="lote"]').value.trim();
         let fecha_vto = tr.querySelector('input[data-field="fecha_vto"]').value.trim();
         const buen_estado = Number(tr.querySelector('input[data-field="buen_estado"]').value) || 0;
         const averias = Number(tr.querySelector('input[data-field="averias"]').value) || 0;
-        const total_recibo = Number(tr.querySelector('input[data-field="total_recibo"]').value) || (buen_estado + averias);
+        const total = buen_estado + averias;
 
         if (!codigo || !lote || !fecha_vto) {
-            alert("Completa código, lote y fecha de vencimiento.");
+            alert("Complete código, lote y fecha de vencimiento.");
             return;
         }
 
@@ -146,11 +155,10 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const fechaV = new Date(fecha_vto);
-        const hoy = new Date();
-        const minimo = new Date(hoy.getFullYear(), hoy.getMonth() + 3, hoy.getDate());
-        if (fechaV < minimo) {
-            alert("Fecha de vencimiento debe ser al menos 3 meses mayor a hoy.");
+        const minDate = new Date();
+        minDate.setMonth(minDate.getMonth() + 3);
+        if (new Date(fecha_vto) < minDate) {
+            alert("La fecha de vencimiento debe ser al menos 3 meses después de hoy.");
             return;
         }
 
@@ -162,43 +170,63 @@ document.addEventListener("DOMContentLoaded", () => {
             fecha_vto,
             buen_estado,
             averias,
-            total_recibo,
+            total,
             usuario: usuarioActual
         };
 
         const btn = e.currentTarget;
-        const txt = btn.textContent;
+        const old = btn.textContent;
         btn.disabled = true;
         btn.textContent = "Guardando...";
 
         try {
-            console.log("Auditoría: enviando payload update:", payload);
             const res = await fetch(WEBAPP_URL, {
                 method: "POST",
                 body: JSON.stringify(payload)
             });
             const text = await res.text();
-            console.log("Auditoría: respuesta update raw:", text);
-            if (text && text.indexOf("OK_UPDATE") !== -1) {
+
+            if (text.includes("OK_UPDATE")) {
                 alert("Registro actualizado correctamente.");
             } else {
-                alert("Error actualizando: " + text);
+                alert("Error: " + text);
             }
+
         } catch (err) {
             alert("Error de conexión: " + err);
-            console.error(err);
         } finally {
             btn.disabled = false;
-            btn.textContent = txt;
+            btn.textContent = old;
         }
     }
 
     function escapeHtml(s) {
-        if (!s && s !== 0) return "";
-        return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+        return String(s || "").replace(/[&<>"]/g, c => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "\"": "&quot;"
+        })[c]);
     }
 
     function escapeAttr(s) {
-        return escapeHtml(s || "").replace(/"/g, "&quot;");
+        return escapeHtml(s || "");
+    }
+
+    // 🔙 crear botón volver arriba del formulario
+    function addBackButton() {
+        const btn = document.createElement("button");
+        btn.textContent = "⬅ Volver";
+        btn.style.marginBottom = "15px";
+        btn.style.background = "#444";
+        btn.style.color = "white";
+        btn.style.padding = "10px 14px";
+        btn.style.borderRadius = "6px";
+        btn.style.cursor = "pointer";
+        btn.addEventListener("click", () => {
+            window.location.href = "dashboard.html";
+        });
+
+        document.querySelector(".card").prepend(btn);
     }
 });
