@@ -10,8 +10,7 @@ const usuarioActual = localStorage.getItem("usuario");
 // ===============================
 // URL DEL WEBAPP GOOGLE APPS SCRIPT
 // ===============================
-const WEBAPP_URL =
-    "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxFP6Hs6McxeihaVPL7uvT4ycmV37ejlqT3ImdM8RLqhcfqwfURhOPMTOvS2p8yL5SQ/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -26,14 +25,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const averiasInput = document.getElementById("averias");
     const totalInput = document.getElementById("total");
 
+    const btnSiguiente = document.getElementById("btn_siguiente");
+    const btnFinalizar = document.getElementById("btn_finalizar");
+
     // ===============================
     // VALIDACIÓN FECHA MM/AAAA
     // ===============================
     vencInput.addEventListener("blur", () => {
-        let valor = vencInput.value.trim();  // Ejemplo: 02/2026
-
-        // Permite MM/AAAA o MM-AAAA
-        const regex = /^([0][1-9]|1[0-2])[-/]([0-9]{4})$/;
+        let valor = vencInput.value.trim();
+        const regex = /^([0-1][0-9])[-/]([0-9]{4})$/;
 
         if (!regex.test(valor)) {
             alert("Formato inválido. Use MM/AAAA");
@@ -41,36 +41,28 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Extraer mes y año
         let [mes, año] = valor.split(/[-/]/).map(Number);
 
-        // ===============================
-        // OBTENER ÚLTIMO DÍA DEL MES
-        // ===============================
+        // Último día del mes
         const ultimoDia = new Date(año, mes, 0).getDate();
-
-        // Construir fecha final en formato completo
-        const fechaCompleta = `${año}-${String(mes).padStart(2, "0")}-${ultimoDia}`;
+        const fechaCompleta = `${año}-${String(mes).padStart(2, '0')}-${ultimoDia}`;
         const fechaVenc = new Date(fechaCompleta);
 
-        // ===============================
-        // VALIDAR QUE FALTEN AL MENOS 3 MESES
-        // ===============================
+        // Validar +3 meses
         const hoy = new Date();
         const fechaMinima = new Date(hoy.getFullYear(), hoy.getMonth() + 3, hoy.getDate());
 
         if (fechaVenc < fechaMinima) {
-            alert("La fecha de vencimiento debe ser mínimo 3 meses superior a la fecha actual.");
+            alert("La fecha de vencimiento debe ser al menos 3 meses superior.");
             vencInput.value = "";
             return;
         }
 
-        // Guardar fecha corregida YYYY-MM-DD
         vencInput.value = fechaCompleta;
     });
 
     // ===============================
-    // ENTER PASA AL SIGUIENTE INPUT
+    // ENTER → SIGUIENTE CAMPO
     // ===============================
     const inputs = document.querySelectorAll("input");
 
@@ -79,7 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (e.key === "Enter") {
                 e.preventDefault();
 
-                // Actualizar total si corresponde
                 if (input === buenInput || input === averiasInput) {
                     actualizarTotal();
                 }
@@ -90,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ===============================
-    // CALCULAR TOTAL
+    // SUMA AUTOMÁTICA
     // ===============================
     function actualizarTotal() {
         let b = parseInt(buenInput.value) || 0;
@@ -102,15 +93,17 @@ document.addEventListener("DOMContentLoaded", () => {
     averiasInput.addEventListener("input", actualizarTotal);
 
     // ===============================
-    // GUARDAR CÓDIGO
+    // GUARDAR UN CÓDIGO
     // ===============================
     async function guardarCodigo() {
+
         let factura = facturaInput.value.trim();
         let codigo = codigoInput.value.trim();
         let lote = loteInput.value.trim();
         let fecha_vto = vencInput.value.trim();
         let cant_buen = Number(buenInput.value);
         let averias = Number(averiasInput.value);
+        let total = cant_buen + averias;
 
         if (!factura || !codigo || !lote || !fecha_vto) {
             alert("Complete todos los campos obligatorios.");
@@ -125,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fecha_vto,
             buen_estado: cant_buen,
             averias,
-            total: cant_buen + averias,
+            total,
             usuario: usuarioActual
         };
 
@@ -137,7 +130,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const texto = await res.text();
 
-            return texto.includes("OK_CODIGO");
+            if (texto.includes("OK_CODIGO")) {
+                return true;
+            } else {
+                alert("Error al guardar: " + texto);
+                return false;
+            }
+
         } catch (err) {
             alert("Error de conexión.");
             return false;
@@ -145,11 +144,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===============================
-    // BOTÓN SIGUIENTE CÓDIGO
+    // SIGUIENTE CÓDIGO (con bloqueo)
     // ===============================
-    document.getElementById("btn_siguiente").addEventListener("click", async () => {
+    btnSiguiente.addEventListener("click", async () => {
+
+        btnSiguiente.disabled = true;
+        btnSiguiente.innerText = "Guardando...";
+
         let ok = await guardarCodigo();
-        if (!ok) return;
+
+        if (!ok) {
+            btnSiguiente.disabled = false;
+            btnSiguiente.innerText = "Siguiente código";
+            return;
+        }
 
         alert("Código guardado. Ingrese el siguiente.");
 
@@ -162,20 +170,34 @@ document.addEventListener("DOMContentLoaded", () => {
         averiasInput.value = "";
         totalInput.value = "";
 
+        btnSiguiente.disabled = false;
+        btnSiguiente.innerText = "Siguiente código";
+
         codigoInput.focus();
     });
 
     // ===============================
     // FINALIZAR FACTURA
     // ===============================
-    document.getElementById("btn_finalizar").addEventListener("click", async () => {
+    btnFinalizar.addEventListener("click", async () => {
+
+        btnFinalizar.disabled = true;
+        btnFinalizar.innerText = "Guardando...";
+
         let ok = await guardarCodigo();
-        if (!ok) return;
+
+        if (!ok) {
+            btnFinalizar.disabled = false;
+            btnFinalizar.innerText = "Finalizar factura";
+            return;
+        }
 
         let cajas = prompt("Ingrese cantidad TOTAL de cajas del pedido:");
 
         if (!cajas || isNaN(cajas)) {
             alert("Debe ingresar un número válido.");
+            btnFinalizar.disabled = false;
+            btnFinalizar.innerText = "Finalizar factura";
             return;
         }
 
@@ -195,12 +217,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!texto.includes("OK_FACTURA")) {
             alert("Error al guardar factura: " + texto);
-            return;
+        } else {
+            alert("Factura finalizada correctamente.");
+            document.getElementById("formDev").reset();
+            facturaInput.removeAttribute("readonly");
         }
 
-        alert("Factura finalizada correctamente.");
-        document.getElementById("formDev").reset();
-        facturaInput.removeAttribute("readonly");
+        btnFinalizar.disabled = false;
+        btnFinalizar.innerText = "Finalizar factura";
     });
 
     // ===============================
@@ -210,4 +234,5 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.clear();
         window.location.href = "index.html";
     });
+
 });
