@@ -200,24 +200,8 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.disabled = false;
             btn.textContent = old;
         }
-    }
-
-    // =========================
-    // BOTÓN VOLVER
-    // =========================
-    function crearBotonVolver() {
-        const btn = document.createElement("button");
-        btn.textContent = "⬅ Volver";
-        btn.style.marginBottom = "15px";
-        btn.style.background = "#444";
-        btn.style.color = "#fff";
-        btn.style.border = "none";
-        btn.style.padding = "10px 14px";
-        btn.style.borderRadius = "6px";
-        btn.style.cursor = "pointer";
-
-        btn.onclick = () => window.location.href = "dashboard.html";
-        document.querySelector(".card").prepend(btn);
+    
+    
     }
 
     // =========================
