@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const fechaMinima = new Date(hoy.getFullYear(), hoy.getMonth() + 3, hoy.getDate());
 
         if (fechaVenc < fechaMinima) {
-            alert("La fecha de vencimiento debe ser al menos 3 meses superior.");
+            alert("La fecha de vencimiento debe ser al menos 3 meses posterior.");
             vencInput.value = "";
             return;
         }
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===============================
-    // SIGUIENTE CÓDIGO (con bloqueo)
+    // SIGUIENTE CÓDIGO (con bloqueo + factura NO se borra)
     // ===============================
     btnSiguiente.addEventListener("click", async () => {
 
@@ -161,8 +161,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         alert("Código guardado. Ingrese el siguiente.");
 
+        // Mantener factura pero bloquearla
         facturaInput.setAttribute("readonly", true);
 
+        // Limpiar SOLO los campos del código
         codigoInput.value = "";
         loteInput.value = "";
         vencInput.value = "";
@@ -177,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ===============================
-    // FINALIZAR FACTURA
+    // FINALIZAR FACTURA (limpia todo)
     // ===============================
     btnFinalizar.addEventListener("click", async () => {
 
