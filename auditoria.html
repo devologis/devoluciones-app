@@ -1,60 +1,51 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Auditoría</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        input {
-            padding: 6px;
-            margin-bottom: 10px;
-            width: 200px;
-        }
-        button {
-            padding: 8px 14px;
-            margin: 5px 0;
-            cursor: pointer;
-        }
-        #resultado {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            width: 320px;
-            display: none;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Auditoría de Registros</title>
+
+  <style>
+    body { font-family: Arial, sans-serif; background:#f7f7f7; margin:0; padding:18px; }
+    .card { max-width:980px; margin:0 auto; background:white; padding:18px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
+    h1 { text-align:center; margin:6px 0 18px; font-size:26px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .col { flex:1 1 220px; min-width:180px; }
+    label { display:block; margin-bottom:6px; font-weight:600; }
+    input { width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; font-size:15px; }
+    button { padding:10px 14px; border-radius:6px; border:none; background:#1976d2; color:white; cursor:pointer; }
+    #results { margin-top:18px; overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { padding:8px; border-bottom:1px solid #eee; text-align:left; vertical-align:middle; }
+    th { background:#fafafa; font-weight:700; }
+    .saveBtn { background:#2e7d32; color:white; padding:6px 10px; border-radius:6px; cursor:pointer; border:none; }
+    .small { font-size:13px; color:#666; }
+    .hint { margin-top:8px; color:#666; font-size:13px; }
+  </style>
 </head>
 <body>
-
+  <div class="card">
     <h1>Auditoría de Registros</h1>
 
-    <label>Número de factura:</label><br>
-    <input type="text" id="factura"><br>
-
-    <label>Código del producto:</label><br>
-    <input type="text" id="codigo"><br>
-
-    <button id="btnBuscar">Buscar</button>
-
-    <div id="resultado">
-        <h3>Resultado</h3>
-        <p><strong>Cantidad Buena:</strong></p>
-        <input type="number" id="cantBuena">
-
-        <p><strong>Cantidad Averiada:</strong></p>
-        <input type="number" id="cantAveriada">
-
-        <br><br>
-        <button id="btnGuardar">Guardar Cambios</button>
+    <div class="row" style="margin-bottom:12px;">
+      <div class="col">
+        <label for="factura">Número de factura</label>
+        <input id="factura" />
+      </div>
+      <div class="col">
+        <label for="codigo">Código (opcional - filtrar)</label>
+        <input id="codigo" />
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="btnBuscar">Buscar</button>
+      </div>
     </div>
 
-    <br>
-    <button onclick="location.href='dashboard.html'">Volver</button>
+    <div class="hint">Si una factura tiene el mismo código en distintos lotes, se mostrarán todas las filas. Puedes editar cualquier fila y presionar "Guardar" para actualizarla.</div>
 
-    <script type="module" src="js/auditoria.js"></script>
+    <div id="results"></div>
+  </div>
 
+  <script type="module" src="js/auditoria.js"></script>
 </body>
 </html>
