@@ -6,42 +6,126 @@
   <title>Auditoría de Registros</title>
 
   <style>
-    body { font-family: Arial, sans-serif; background:#f7f7f7; margin:0; padding:18px; }
-    .card { max-width:980px; margin:0 auto; background:white; padding:18px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
-    h1 { text-align:center; margin:6px 0 18px; font-size:26px; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .col { flex:1 1 220px; min-width:180px; }
-    label { display:block; margin-bottom:6px; font-weight:600; }
-    input { width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; font-size:15px; }
-    button { padding:10px 14px; border-radius:6px; border:none; background:#1976d2; color:white; cursor:pointer; }
-    #results { margin-top:18px; overflow-x:auto; }
-    table { width:100%; border-collapse:collapse; font-size:14px; }
-    th,td { padding:8px; border-bottom:1px solid #eee; text-align:left; vertical-align:middle; }
-    th { background:#fafafa; font-weight:700; }
-    .saveBtn { background:#2e7d32; color:white; padding:6px 10px; border-radius:6px; cursor:pointer; border:none; }
+    body { 
+      font-family: Arial, sans-serif; 
+      background:#f7f7f7; 
+      margin:0; 
+      padding:18px; 
+    }
+
+    .card { 
+      max-width:980px; 
+      margin:0 auto; 
+      background:white; 
+      padding:18px; 
+      border-radius:8px; 
+      box-shadow:0 4px 12px rgba(0,0,0,0.06); 
+    }
+
+    h1 { 
+      text-align:center; 
+      margin:6px 0 18px; 
+      font-size:26px; 
+    }
+
+    /* ← Corregido: filas flexibles y autoajuste sin encimarse */
+    .row { 
+      display:flex; 
+      gap:12px; 
+      flex-wrap:wrap; 
+      align-items:flex-end; 
+    }
+
+    .col { 
+      flex:1 1 260px; 
+      min-width:200px; 
+    }
+
+    label { 
+      display:block; 
+      margin-bottom:6px; 
+      font-weight:600; 
+    }
+
+    input { 
+      width:100%; 
+      padding:10px; 
+      border-radius:6px; 
+      border:1px solid #ccc; 
+      font-size:15px; 
+      box-sizing:border-box;
+    }
+
+    button { 
+      padding:11px 16px; 
+      border-radius:6px; 
+      border:none; 
+      background:#1976d2; 
+      color:white; 
+      cursor:pointer;
+      font-size:15px;
+      font-weight:600;
+      white-space:nowrap;
+    }
+
+    #results { 
+      margin-top:18px; 
+      overflow-x:auto; 
+    }
+
+    table { 
+      width:100%; 
+      border-collapse:collapse; 
+      font-size:14px; 
+    }
+
+    th, td { 
+      padding:8px; 
+      border-bottom:1px solid #eee; 
+      text-align:left; 
+      vertical-align:middle; 
+    }
+
+    th { 
+      background:#fafafa; 
+      font-weight:700; 
+    }
+
+    .saveBtn { 
+      background:#2e7d32; 
+      color:white; 
+      padding:6px 10px; 
+      border-radius:6px; 
+      cursor:pointer; 
+      border:none; 
+    }
+
     .small { font-size:13px; color:#666; }
     .hint { margin-top:8px; color:#666; font-size:13px; }
   </style>
 </head>
 <body>
+
   <div class="card">
     <h1>Auditoría de Registros</h1>
 
     <div class="row" style="margin-bottom:12px;">
+      
       <div class="col">
         <label for="factura">Número de factura</label>
         <input id="factura" />
       </div>
+
       <div class="col">
         <label for="codigo">Código (opcional - filtrar)</label>
         <input id="codigo" />
       </div>
-      <div style="align-self:flex-end;">
+
+      <div style="flex:0 0 auto;">
         <button id="btnBuscar">Buscar</button>
       </div>
-    </div>
 
-  
+    </div>
 
     <div id="results"></div>
   </div>
