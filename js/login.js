@@ -1,12 +1,3 @@
-import { app } from "./firebase.js";
-import {
-    getFirestore,
-    doc,
-    getDoc
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-const db = getFirestore(app);
-
 window.login = async function () {
     const usuario = document.getElementById("usuario").value.trim();
     const clave = document.getElementById("clave").value.trim();
@@ -17,34 +8,34 @@ window.login = async function () {
         return;
     }
 
-    // Validar que el usuario sea numérico
+    // Validar que el usuario sea numérico (se mantiene tu regla)
     if (!/^\d+$/.test(usuario)) {
         alert("El usuario debe ser numérico.");
         return;
     }
 
     try {
-        // Buscar usuario por ID
-        const docRef = doc(db, "usuarios", usuario);
-        const docSnap = await getDoc(docRef);
+        const response = await fetch("/api/auth/login.php", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                usuario: usuario,
+                password: clave
+            })
+        });
 
-        if (!docSnap.exists()) {
-            alert("Usuario no encontrado.");
+        const data = await response.json();
+
+        if (!data.ok) {
+            alert(data.error || "Credenciales inválidas.");
             return;
         }
 
-        const data = docSnap.data();
-
-        // Validar clave
-        if (data.clave !== clave) {
-            alert("Clave incorrecta.");
-            return;
-        }
-
-        // Guardar sesión
-        localStorage.setItem("usuario", usuario);
-        localStorage.setItem("nombre", data.nombre || "");
-        localStorage.setItem("rol", data.rol || "normal");
+        // Guardar sesión (equivalente a lo que hacías con Firebase)
+        localStorage.setItem("usuario", data.usuario);
+        localStorage.setItem("rol", data.rol);
 
         // Redirigir por rol
         if (data.rol === "admin") {
