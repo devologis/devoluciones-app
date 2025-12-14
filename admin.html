@@ -69,19 +69,6 @@
         }
 
         th { background:#e9e9e9; }
-
-        .btnEliminar {
-            background:#dc2626;
-            color:white;
-            border:none;
-            padding:6px 10px;
-            border-radius:6px;
-            cursor:pointer;
-        }
-
-        .btnEliminar:active {
-            background:#b91c1c;
-        }
     </style>
 </head>
 <body>
@@ -91,46 +78,6 @@
 
     <!-- ✅ FORMULARIO CREAR USUARIO -->
     <label>Usuario (ID numérico)</label>
-    <input type="text" id="usuario" inputmode="numeric" pattern="\d*" />
+    <input type="text" id="nuevoUsuario" inputmode="numeric" pattern="\d*" />
 
-    <label>Nombre</label>
-    <input type="text" id="nombre" />
-
-    <label>Clave</label>
-    <input type="password" id="clave" />
-
-    <label>Rol</label>
-    <select id="rol">
-        <option value="normal">Normal</option>
-        <option value="admin">Admin</option>
-        <option value="auditor">Auditor</option>
-    </select>
-
-    <button class="btn-primary" id="btnAgregar">➕ Crear Usuario</button>
-
-    <!-- ✅ TABLA USUARIOS -->
-    <table>
-        <thead>
-            <tr>
-                <th>Usuario</th>
-                <th>Nombre</th>
-                <th>Rol</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody id="listaUsuarios"></tbody>
-    </table>
-
-    <button class="btn-back" onclick="window.location.href='dashboard.html'">
-        🔙 Volver
-    </button>
-</div>
-
-<!-- ✅ Firebase App -->
-<script type="module" src="./js/firebase.js"></script>
-
-<!-- ✅ Lógica Administrador -->
-<script type="module" src="./js/admin.js"></script>
-
-</body>
-</html>
+    <label>Clave</
